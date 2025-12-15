@@ -1,22 +1,5 @@
 const canvas = document.getElementById("circuit-canvas");
 const ctx = canvas.getContext("2d");
-
-// Polyfill for roundRect if not supported (e.g. older mobile browsers)
-if (!ctx.roundRect) {
-  ctx.roundRect = function (x, y, w, h, r) {
-    if (w < 2 * r) r = w / 2;
-    if (h < 2 * r) r = h / 2;
-    this.beginPath();
-    this.moveTo(x + r, y);
-    this.arcTo(x + w, y, x + w, y + h, r);
-    this.arcTo(x + w, y + h, x, y + h, r);
-    this.arcTo(x, y + h, x, y, r);
-    this.arcTo(x, y, x + w, y, r);
-    this.closePath();
-    return this;
-  };
-}
-
 const statusDisplay = document.getElementById("status-display");
 const clearBtn = document.getElementById("clear-btn");
 const shortWarning = document.getElementById("short-warning");
@@ -1179,19 +1162,7 @@ function draw() {
     }
   });
 
-  components.forEach((c) => {
-      try {
-          c.draw(ctx);
-      } catch (err) {
-          console.error("Draw error for component:", c.type, err);
-          // Fallback: draw a red box so we know it exists
-          ctx.save();
-          ctx.translate(c.x, c.y);
-          ctx.fillStyle = "red";
-          ctx.fillRect(-20, -20, 40, 40);
-          ctx.restore();
-      }
-  });
+  components.forEach((c) => c.draw(ctx));
 
   // Drawing feedback for wire creation
   if (isDrawingWire && wireStartTerminal) {
