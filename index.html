@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>小小電路科學家</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#4facfe" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Debug Console for Mobile -->
+    <div
+      id="debug-console"
+      style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 200px;
+        background: rgba(0, 0, 0, 0.8);
+        color: lime;
+        overflow: auto;
+        z-index: 9999;
+        font-family: monospace;
+        font-size: 12px;
+        padding: 10px;
+      "
+    >
+      <button
+        onclick="this.parentElement.style.display='none'"
+        style="
+          position: sticky;
+          top: 0;
+          float: right;
+          background: red;
+          color: white;
+        "
+      >
+        Close
+      </button>
+      <div>Debug Log:</div>
+    </div>
+    <script>
+      // Global Error Handler
+      window.onerror = function (msg, url, lineNo, columnNo, error) {
+        var consoleDiv = document.getElementById("debug-console");
+        consoleDiv.style.display = "block";
+        consoleDiv.innerHTML += `<div>❌ Error: ${msg} <br> at ${url}:${lineNo}</div>`;
+        return false;
+      };
+      // Catch resource loading errors (img, script, css)
+      window.addEventListener(
+        "error",
+        function (e) {
+          if (
+            e.target.tagName &&
+            (e.target.tagName === "SCRIPT" ||
+              e.target.tagName === "LINK" ||
+              e.target.tagName === "IMG")
+          ) {
+            var consoleDiv = document.getElementById("debug-console");
+            consoleDiv.style.display = "block";
+            consoleDiv.innerHTML += `<div>❌ Failed to load resource: ${
+              e.target.src || e.target.href
+            }</div>`;
+          }
+        },
+        true
+      );
+    </script>
+    <div class="container">
+      <header>
+        <h1>💡 小小電路科學家 🔋</h1>
+        <p>拖曳電池和燈泡，把它們連起來看看會發生什麼事吧！</p>
+      </header>
+
+      <main>
+        <div class="sidebar">
+          <h2>元件箱</h2>
+          <div class="toolbox">
+            <div class="component-item" draggable="true" data-type="battery">
+              <div class="icon battery-icon">🔋</div>
+              <span>電池 (1.5V)</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="bulb">
+              <div class="icon bulb-icon">💡</div>
+              <span>燈泡</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="motor">
+              <div class="icon motor-icon">⚙️</div>
+              <span>馬達</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="switch">
+              <div class="icon switch-icon">
+                <svg
+                  width="40"
+                  height="40"
+                  viewBox="0 0 100 100"
+                  style="overflow: visible"
+                >
+                  <circle cx="20" cy="80" r="10" fill="#95a5a6" />
+                  <circle cx="80" cy="80" r="10" fill="#95a5a6" />
+                  <line
+                    x1="20"
+                    y1="80"
+                    x2="70"
+                    y2="30"
+                    stroke="#f39c12"
+                    stroke-width="8"
+                    stroke-linecap="round"
+                  />
+                  <rect
+                    x="65"
+                    y="25"
+                    width="10"
+                    height="20"
+                    fill="#e74c3c"
+                    transform="rotate(-45 70 30)"
+                  />
+                </svg>
+              </div>
+              <span>開關</span>
+            </div>
+            <!-- New Components -->
+            <div class="component-item" draggable="true" data-type="paperclip">
+              <div class="icon">📎</div>
+              <span>迴紋針</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="eraser">
+              <div class="icon">🧼</div>
+              <span>橡皮擦</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="coin">
+              <div class="icon">🪙</div>
+              <span>硬幣</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="lego">
+              <div class="icon">
+                <svg
+                  width="40"
+                  height="40"
+                  viewBox="0 0 100 100"
+                  style="overflow: visible"
+                >
+                  <!-- Red Body -->
+                  <rect
+                    x="15"
+                    y="25"
+                    width="70"
+                    height="50"
+                    rx="2"
+                    fill="#e74c3c"
+                    stroke="#c0392b"
+                    stroke-width="2"
+                  />
+                  <!-- Studs (2x4) -->
+                  <circle
+                    cx="26"
+                    cy="38"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                  <circle
+                    cx="42"
+                    cy="38"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                  <circle
+                    cx="58"
+                    cy="38"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                  <circle
+                    cx="74"
+                    cy="38"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+
+                  <circle
+                    cx="26"
+                    cy="62"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                  <circle
+                    cx="42"
+                    cy="62"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                  <circle
+                    cx="58"
+                    cy="62"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                  <circle
+                    cx="74"
+                    cy="62"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                </svg>
+              </div>
+              <span>積木</span>
+            </div>
+          </div>
+
+          <button id="clear-btn" class="btn danger">清除全部</button>
+
+          <div class="instructions">
+            <h3>如何使用：</h3>
+            <ol>
+              <li>從元件箱把電池或燈泡拖到右邊的畫布上。</li>
+              <li>點擊元件兩端的接點來連接電線。</li>
+              <li>試著串連或並連看看！</li>
+              <li>按一下可以旋轉、兩下可以刪除元件。</li>
+            </ol>
+          </div>
+        </div>
+
+        <div class="workspace-container">
+          <canvas id="circuit-canvas"></canvas>
+          <div id="short-warning" class="warning-banner hidden">
+            ⚠️ 短路警告！電池過熱危險！
+          </div>
+          <div id="status-display">目前狀態: 等待連接...</div>
+
+          <!-- Context Menu -->
+          <div id="context-menu" class="hidden">
+            <div class="menu-item" id="menu-resistance">電阻: --</div>
+            <div class="menu-item" id="menu-voltage">跨壓: --</div>
+            <div class="menu-item" id="menu-current">電流: --</div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("./sw.js")
+          .then(() => console.log("Service Worker Registered"))
+          .catch((err) => console.log("SW Failed", err));
+      }
+    </script>
+  </body>
+</html>
