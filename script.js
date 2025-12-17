@@ -7,12 +7,12 @@ const shortWarning = document.getElementById("short-warning");
 // System Parameters
 const BULB_RESISTANCE = 100;
 const MOTOR_RESISTANCE = 50; // Ohms
-const SWITCH_RESISTANCE = 0.01; // Closed
+const SWITCH_RESISTANCE = 0.00001; // Closed
 const SWITCH_OPEN_RESISTANCE = 1e9; // Open
-const CONDUCTOR_RESISTANCE = 0.01; // Metal
+const CONDUCTOR_RESISTANCE = 0.00001; // Metal
 const INSULATOR_RESISTANCE = 1e9; // Plastic/Rubber
 const BATTERY_VOLTAGE = 1.5;
-const BATTERY_RESISTANCE = 0.1;
+const BATTERY_RESISTANCE = 0.001;
 const WIRE_RESISTANCE = 0.00001; // Effectively 0, but prevents division by zero in Matrix solver
 const GRID_SIZE = 20; // Snapping grid size
 
@@ -343,7 +343,7 @@ class Component {
       // Speed depends on voltageDrop
       // Direction depends on voltage sign
       // Update angle
-      const speed = this.voltageDrop * 0.2; // Reduced speed factor for visibility
+      const speed = this.voltageDrop * 0.1; // Slower speed as requested
       this.fanAngle += speed;
 
       ctx.save();
