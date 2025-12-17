@@ -343,7 +343,7 @@ class Component {
       // Speed depends on voltageDrop
       // Direction depends on voltage sign
       // Update angle
-      const speed = this.voltageDrop * 0.1; // Slower speed as requested
+      const speed = this.voltageDrop * 0.05; // Even slower speed as requested
       this.fanAngle += speed;
 
       ctx.save();
@@ -357,10 +357,15 @@ class Component {
       ctx.fillStyle = "rgba(46, 204, 113, 0.8)"; // Greenish fan
       for (let i = 0; i < 3; i++) {
         ctx.beginPath();
+        // Wider, rounder blade (like a flower petal or electric fan)
         ctx.moveTo(0, 0);
-        ctx.quadraticCurveTo(10, -10, 0, -40); // One side
-        ctx.quadraticCurveTo(-10, -10, 0, 0); // Other side
+        ctx.bezierCurveTo(20, -10, 25, -35, 0, -45); // Right edge curve
+        ctx.bezierCurveTo(-25, -35, -20, -10, 0, 0); // Left edge curve
         ctx.fill();
+        ctx.strokeStyle = "#27ae60";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        
         ctx.rotate((Math.PI * 2) / 3);
       }
       // Center Hub
