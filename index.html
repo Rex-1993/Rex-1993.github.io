@@ -17,68 +17,64 @@
     />
   </head>
   <body>
-    <!-- Debug Console for Mobile -->
-    <div
-      id="debug-console"
-      style="
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 200px;
-        background: rgba(0, 0, 0, 0.8);
-        color: lime;
-        overflow: auto;
-        z-index: 9999;
-        font-family: monospace;
-        font-size: 12px;
-        padding: 10px;
-      "
-    >
-      <button
-        onclick="this.parentElement.style.display='none'"
-        style="
-          position: sticky;
-          top: 0;
-          float: right;
-          background: red;
-          color: white;
-        "
-      >
-        Close
-      </button>
-      <div>Debug Log:</div>
-    </div>
-    <script>
-      // Global Error Handler
-      window.onerror = function (msg, url, lineNo, columnNo, error) {
-        var consoleDiv = document.getElementById("debug-console");
-        consoleDiv.style.display = "block";
-        consoleDiv.innerHTML += `<div>❌ Error: ${msg} <br> at ${url}:${lineNo}</div>`;
-        return false;
-      };
-      // Catch resource loading errors (img, script, css)
-      window.addEventListener(
-        "error",
-        function (e) {
-          if (
-            e.target.tagName &&
-            (e.target.tagName === "SCRIPT" ||
-              e.target.tagName === "LINK" ||
-              e.target.tagName === "IMG")
-          ) {
-            var consoleDiv = document.getElementById("debug-console");
-            consoleDiv.style.display = "block";
-            consoleDiv.innerHTML += `<div>❌ Failed to load resource: ${
-              e.target.src || e.target.href
-            }</div>`;
-          }
-        },
-        true
-      );
-    </script>
     <div class="container">
+      <!-- Start Screen Overlay -->
+      <div id="start-screen" class="overlay">
+        <div class="panel start-panel">
+          <h1>小小電路科學家</h1>
+          <p>探索電路的奧秘，或是挑戰你的知識！</p>
+          <div class="mode-selection">
+            <button id="btn-normal-mode" class="btn-primary-large">
+              自由探索模式
+            </button>
+            <div class="challenge-option">
+              <button id="btn-challenge-mode" class="btn-secondary-large">
+                挑戰模式
+              </button>
+              <div class="difficulty-select">
+                <label>題數:</label>
+                <select id="challenge-count">
+                  <option value="5">5 題</option>
+                  <option value="10">10 題</option>
+                  <option value="15">15 題</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Challenge HUD (Hidden by default) -->
+      <div id="challenge-hud" class="hidden">
+        <div class="hud-top">
+          <div class="hud-score">
+            得分: <span id="score-val">0</span> / <span id="total-val">0</span>
+          </div>
+          <div class="hud-question">
+            題目: <span id="question-text">請連接電路...</span>
+          </div>
+        </div>
+        <!-- Buttons moved to sidebar -->
+      </div>
+
+      <!-- Results Screen (Hidden by default) -->
+      <div id="results-screen" class="overlay hidden">
+        <div class="panel results-panel">
+          <h2>挑戰完成！</h2>
+          <div class="final-score">
+            總分: <span id="final-score-val">0</span>
+          </div>
+          
+          <!-- Weakness Analysis -->
+          <div id="weakness-report" class="weakness-container hidden">
+              <h3>📊 弱點分析</h3>
+              <div id="weakness-list"></div>
+          </div>
+
+          <div id="mistakes-list" class="mistakes-container"></div>
+          <button id="btn-restart" class="btn-primary">回到主選單</button>
+        </div>
+      </div>
       <header>
         <h1>💡 小小電路科學家 🔋</h1>
         <p>拖曳電池和燈泡，把它們連起來看看會發生什麼事吧！</p>
@@ -141,7 +137,7 @@
               <span>橡皮擦</span>
             </div>
             <div class="component-item" draggable="true" data-type="coin">
-              <div class="icon">💰</div>
+              <div class="icon">💲</div>
               <span>硬幣</span>
             </div>
             <div class="component-item" draggable="true" data-type="lego">
@@ -235,15 +231,19 @@
             </div>
           </div>
 
-          <button id="clear-btn" class="btn danger">清除全部</button>
+          <div class="sidebar-controls">
+            <button id="verify-btn" class="btn success hidden">驗證答案</button>
+            <button id="clear-btn" class="btn danger">清除全部</button>
+            <button id="home-btn" class="btn home">回到首頁</button>
+          </div>
 
           <div class="instructions">
             <h3>如何使用：</h3>
             <ol>
-              <li>從元件箱把電池或燈泡拖到右邊的畫布上。</li>
+              <li>從元件箱把元件拖曳到右邊的畫布上。</li>
               <li>點擊元件兩端的接點來連接電線。</li>
-              <li>試著串連或並連看看！</li>
-              <li>按一下可以旋轉、兩下可以刪除元件。</li>
+              <li>按一下可以旋轉元件。</li>
+              <li>按兩下可以刪除元件。</li>
             </ol>
           </div>
         </div>

@@ -13,7 +13,8 @@ const CONDUCTOR_RESISTANCE = 0.01; // Metal
 const INSULATOR_RESISTANCE = 1e9; // Plastic/Rubber
 const BATTERY_VOLTAGE = 1.5;
 const BATTERY_RESISTANCE = 0.1;
-const WIRE_RESISTANCE = 0.01; // Needed for flow calculation
+const WIRE_RESISTANCE = 0.00001; // Effectively 0, but prevents division by zero in Matrix solver
+const GRID_SIZE = 20; // Snapping grid size
 
 // ---------------------------------------------------------
 // Game State
@@ -70,7 +71,7 @@ class Component {
       // Elongated Battery
       this.localTerminals = [
         { id: 0, x: -55, y: 0 }, // Left (+)
-        { id: 1, x: 55, y: 0 }, // Right (-)
+        { id: 1, x: 45, y: 0 }, // Right (-)
       ];
     } else if (this.type === "bulb") {
       // Anatomical Bulb: 0=Side(Thread), 1=Bottom(Tip)
@@ -604,6 +605,350 @@ function drawTerminalPoint(ctx, x, y, isHover) {
   ctx.stroke();
 }
 
+// ---------------------------------------------------------
+// Circuit Analysis Logic
+// ---------------------------------------------------------
+class CircuitAnalyzer {
+  static analyze(components, wires) {
+    if (components.length === 0) return { isValid: false, message: "沒有放置任何元件" };
+
+    // 1. Build Graph (Node -> Components)
+    const nodeMap = new Map(); // NodeID -> List of {comp, terminalId}
+    const componentConnections = new Map(); // CompID -> Set of NodeIDs
+
+    // Assign Node IDs based on connected terminals
+    // We can reuse the simulation logic's node discovery or build a simpler one.
+    // Let's build a Disjoint Set (Union-Find) to group connected terminals into Nodes.
+    const parent = new Map();
+    function find(i) {
+      if (!parent.has(i)) parent.set(i, i);
+      if (parent.get(i) !== i) parent.set(i, find(parent.get(i)));
+      return parent.get(i);
+    }
+    function union(i, j) {
+      const rootI = find(i);
+      const rootJ = find(j);
+      if (rootI !== rootJ) parent.set(rootI, rootJ);
+    }
+
+    // Initialize all terminals
+    components.forEach((c) => {
+      find(`${c.id}-0`);
+      find(`${c.id}-1`);
+    });
+
+    // Union connected terminals
+    wires.forEach((w) => {
+      const t1 = `${w.from.comp.id}-${w.from.terminalId}`;
+      const t2 = `${w.to.comp.id}-${w.to.terminalId}`;
+      union(t1, t2);
+    });
+
+    // Map Components to their Nodes
+    components.forEach((c) => {
+      const n0 = find(`${c.id}-0`);
+      const n1 = find(`${c.id}-1`);
+      componentConnections.set(c.id, { n0, n1, type: c.type, comp: c });
+    });
+
+    // Helper: Get components of specific type
+    const batts = components.filter(c => c.type === 'battery');
+    const bulbs = components.filter(c => c.type === 'bulb');
+    const motors = components.filter(c => c.type === 'motor');
+
+    return {
+      batts,
+      bulbs,
+      motors,
+      componentConnections,
+      checkSeries: (comps) => this.checkSeries(comps, componentConnections),
+      checkParallel: (comps) => this.checkParallel(comps, componentConnections)
+    };
+  }
+
+  // Check if components are in Series
+  // Definition: They form a single path. Each component shares a node with the previous one, 
+  // and that node has degree 2 (only those two components connected).
+  static checkSeries(comps, connMap) {
+    if (comps.length < 2) return true; // Single component is trivially series with itself? Or meaningless.
+
+    // A simple series chain means:
+    // C1 --(n1)-- C2 --(n2)-- C3
+    // Nodes n1, n2 must only connect these specific components.
+    
+    // Let's create a subgraph of just these components.
+    // Count degree of each node considering ONLY these components.
+    const nodeDegree = new Map();
+    comps.forEach(c => {
+      const { n0, n1 } = connMap.get(c.id);
+      nodeDegree.set(n0, (nodeDegree.get(n0) || 0) + 1);
+      nodeDegree.set(n1, (nodeDegree.get(n1) || 0) + 1);
+    });
+
+    // In a line of N components:
+    // 2 End nodes have degree 1
+    // (N-1) Internal nodes have degree 2
+    let ends = 0;
+    let mids = 0;
+    for (let d of nodeDegree.values()) {
+        if (d === 1) ends++;
+        else if (d === 2) mids++;
+        else return false; // Branching or loops
+    }
+
+    return ends === 2 && mids === (comps.length - 1);
+  }
+
+  // Check if components are in Parallel
+  // Definition: All components share the exact same two nodes.
+  static checkParallel(comps, connMap) {
+    if (comps.length < 2) return true;
+
+    const first = connMap.get(comps[0].id);
+    const nA = first.n0;
+    const nB = first.n1;
+
+    // All others must have {n0, n1} match {nA, nB} (order irrelevant)
+    for (let i = 1; i < comps.length; i++) {
+        const c = connMap.get(comps[i].id);
+        const match = (c.n0 === nA && c.n1 === nB) || (c.n0 === nB && c.n1 === nA);
+        if (!match) return false;
+    }
+    return true;
+  }
+}
+
+// ---------------------------------------------------------
+// Challenge Manager
+// ---------------------------------------------------------
+class ChallengeManager {
+    constructor() {
+        this.questions = [];
+        this.currentIndex = 0;
+        this.score = 0;
+        this.mistakes = [];
+        this.totalQuestions = 5;
+        // Tracking for Analysis
+        this.stats = {
+            'series_batt': { tries: 0, fails: 0, label: "電池串聯" },
+            'parallel_batt': { tries: 0, fails: 0, label: "電池並聯" },
+            'series_bulb': { tries: 0, fails: 0, label: "燈泡串聯" },
+            'parallel_bulb': { tries: 0, fails: 0, label: "燈泡並聯" },
+            'series_motor': { tries: 0, fails: 0, label: "馬達串聯" },
+            'parallel_motor': { tries: 0, fails: 0, label: "馬達並聯" }
+        };
+    }
+
+    start(count) {
+        this.totalQuestions = parseInt(count);
+        this.score = 0;
+        this.currentIndex = 0;
+        this.mistakes = [];
+        // Reset stats
+        Object.keys(this.stats).forEach(key => {
+            this.stats[key].tries = 0;
+            this.stats[key].fails = 0;
+        });
+        
+        this.generateQuestions();
+        this.updateHUD();
+    }
+
+    generateQuestions() {
+        this.questions = [];
+        const usedSignatures = new Set(); // Avoid exact duplicates in one run
+
+        // Helper to add unique question
+        const addQ = (type, param, text) => {
+             const sig = `${type}-${param}`;
+             if(usedSignatures.has(sig) && usedSignatures.size < 15) return false; // Try to be unique
+             
+             this.questions.push({ type, param, text });
+             usedSignatures.add(sig);
+             return true;
+        };
+
+        // Procedural Generation Loop
+        // Limits:
+        // Battery: 1~3 (Practically 2-3 for Series/Parallel)
+        // Bulb: 1~4 (2-4 for Series/Parallel)
+        // Motor: 1~4 (2-4 for Series/Parallel)
+
+        let attempts = 0;
+        while(this.questions.length < this.totalQuestions && attempts < 1000) {
+            attempts++;
+            const category = Math.random(); // Random selection
+
+            // Weighted distribution could be added here
+            
+            if (category < 0.15) { 
+                // Series Batt (2-3)
+                const n = 2 + Math.floor(Math.random() * 2); // 2 or 3
+                addQ('series_batt', n, `請串聯 ${n} 顆電池供電給 1 顆燈泡`);
+            } else if (category < 0.3) {
+                 // Parallel Batt (2-3)
+                 const n = 2 + Math.floor(Math.random() * 2); // 2 or 3
+                 addQ('parallel_batt', n, `請並聯 ${n} 顆電池供電給 1 顆燈泡`);
+            } else if (category < 0.53) {
+                // Series Bulb (2-4)
+                const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
+                addQ('series_bulb', n, `請使用 1 顆電池，串聯 ${n} 顆燈泡`);
+            } else if (category < 0.76) {
+                // Parallel Bulb (2-4)
+                const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
+                addQ('parallel_bulb', n, `請使用 1 顆電池，並聯 ${n} 顆燈泡`);
+            } else if (category < 0.88) {
+                // Series Motor (2-4)
+                const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
+                addQ('series_motor', n, `請使用 1 顆電池，串聯 ${n} 顆馬達`);
+            } else {
+                // Parallel Motor (2-4)
+                const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
+                addQ('parallel_motor', n, `請使用 1 顆電池，並聯 ${n} 顆馬達`);
+            }
+        }
+    }
+
+    updateHUD() {
+        document.getElementById('score-val').textContent = this.score;
+        document.getElementById('total-val').textContent = this.totalQuestions;
+        document.getElementById('question-text').textContent = 
+            `Q${this.currentIndex + 1}: ${this.questions[this.currentIndex].text}`;
+    }
+
+    checkAnswer(components, wires) {
+        const q = this.questions[this.currentIndex];
+        
+        // Update Stats
+        if(this.stats[q.type]) {
+            this.stats[q.type].tries++;
+        }
+
+        const analysis = CircuitAnalyzer.analyze(components, wires);
+        
+        // 1. Filter relevant components
+        const battUsed = analysis.batts;
+        const bulbUsed = analysis.bulbs;
+        const motorUsed = analysis.motors;
+
+        let isCorrect = false;
+        let failReason = "電路連接錯誤";
+
+        // Logic Check
+        if (q.type === 'series_batt') {
+            const needBatts = q.param;
+            if (battUsed.length !== needBatts) failReason = `電池數量錯誤 (需要 ${needBatts}, 使用 ${battUsed.length})`;
+            else if (bulbUsed.length < 1) failReason = "沒有連接燈泡";
+            else if (!analysis.checkSeries(battUsed)) failReason = "電池沒有正確串聯";
+            else isCorrect = true; 
+        } else if (q.type === 'parallel_batt') {
+            const needBatts = q.param;
+            if (battUsed.length !== needBatts) failReason = `電池數量錯誤 (需要 ${needBatts}, 使用 ${battUsed.length})`;
+            else if (bulbUsed.length < 1) failReason = "沒有連接燈泡";
+            else if (!analysis.checkParallel(battUsed)) failReason = "電池沒有正確並聯";
+            else isCorrect = true;
+        } else if (q.type === 'parallel_bulb') {
+            const needBulbs = q.param;
+            if (bulbUsed.length !== needBulbs) failReason = `燈泡數量錯誤 (需要 ${needBulbs}, 使用 ${bulbUsed.length})`;
+            else if (!analysis.checkParallel(bulbUsed)) failReason = "燈泡沒有正確並聯";
+            else if(battUsed.length < 1) failReason = "沒有連接電池";
+            else isCorrect = true;
+        } else if (q.type === 'series_bulb') {
+             const needBulbs = q.param;
+            if (bulbUsed.length !== needBulbs) failReason = `燈泡數量錯誤 (需要 ${needBulbs}, 使用 ${bulbUsed.length})`;
+            else if (!analysis.checkSeries(bulbUsed)) failReason = "燈泡沒有正確串聯";
+            else if(battUsed.length < 1) failReason = "沒有連接電池";
+            else isCorrect = true;
+        } else if (q.type === 'parallel_motor') {
+            const needMotors = q.param;
+            if (motorUsed.length !== needMotors) failReason = `馬達數量錯誤 (需要 ${needMotors}, 使用 ${motorUsed.length})`;
+            else if (!analysis.checkParallel(motorUsed)) failReason = "馬達沒有正確並聯";
+            else if(battUsed.length < 1) failReason = "沒有連接電池";
+            else isCorrect = true;
+        } else if (q.type === 'series_motor') {
+            const needMotors = q.param;
+            if (motorUsed.length !== needMotors) failReason = `馬達數量錯誤 (需要 ${needMotors}, 使用 ${motorUsed.length})`;
+            else if (!analysis.checkSeries(motorUsed)) failReason = "馬達沒有正確串聯";
+            else if(battUsed.length < 1) failReason = "沒有連接電池";
+            else isCorrect = true;
+        }
+
+        if (isCorrect) {
+            this.score++;
+            alert("答對了！");
+        } else {
+            alert(`答錯了！\n原因: ${failReason}`);
+            this.mistakes.push({ q: q.text, reason: failReason });
+            // Record Failure for analysis
+            if(this.stats[q.type]) {
+                this.stats[q.type].fails++;
+            }
+        }
+
+        this.currentIndex++;
+        if (this.currentIndex >= this.totalQuestions) {
+            this.endGame();
+        } else {
+            clearComponents(); 
+            this.updateHUD();
+        }
+    }
+
+    endGame() {
+        document.getElementById('challenge-hud').classList.add('hidden');
+        document.getElementById('results-screen').classList.remove('hidden');
+        document.getElementById('final-score-val').textContent = this.score;
+        
+        // Mistakes List
+        const list = document.getElementById('mistakes-list');
+        list.innerHTML = "";
+        this.mistakes.forEach(m => {
+            const item = document.createElement('div');
+            item.className = 'mistake-item';
+            item.innerHTML = `<div class="mistake-q">${m.q}</div><div class="mistake-reason">${m.reason}</div>`;
+            list.appendChild(item);
+        });
+
+        // Application of Weakness Analysis
+        const wReport = document.getElementById('weakness-report');
+        const wList = document.getElementById('weakness-list');
+        wList.innerHTML = "";
+        
+        let hasWeakness = false;
+        Object.keys(this.stats).forEach(key => {
+            const s = this.stats[key];
+            if (s.tries > 0 && s.fails > 0) {
+                // If they failed at least once
+                hasWeakness = true;
+                const item = document.createElement('div');
+                item.className = 'weakness-item';
+                // Simple logic: If fails > 0, mention it. Could be % based.
+                // "燈泡串聯需加強 (錯誤 1/2)"
+                item.textContent = `${s.label}需加強 (錯誤 ${s.fails}/${s.tries}題)`;
+                wList.appendChild(item);
+            }
+        });
+
+        if (hasWeakness) {
+            wReport.classList.remove('hidden');
+        } else {
+            wReport.classList.add('hidden');
+            // Maybe show message "完美無缺！" if score is max?
+        }
+    }
+}
+
+const challengeManager = new ChallengeManager();
+
+function clearComponents() {
+    // Helper to access global
+    components = [];
+    wires = [];
+    runSimulation();
+}
+
+
+
 function isHoveringTerminal(comp, tid) {
   if (!hoverTerminal) return false;
   return hoverTerminal.comp === comp && hoverTerminal.terminalId === tid;
@@ -706,10 +1051,22 @@ canvas.addEventListener("mousemove", (e) => {
   const pos = getMousePos(e);
   hoverTerminal = getHoveredTerminal(pos.x, pos.y);
 
-  if (isDragging && draggedComponent) {
-    draggedComponent.x = pos.x - offset.x;
-    draggedComponent.y = pos.y - offset.y;
-    runSimulation();
+  if (isDragging) {
+    if (draggedComponent) {
+      // Snap to Grid
+      let nx = pos.x - offset.x;
+      let ny = pos.y - offset.y;
+      
+      nx = Math.round(nx / GRID_SIZE) * GRID_SIZE;
+      ny = Math.round(ny / GRID_SIZE) * GRID_SIZE;
+
+      draggedComponent.x = nx;
+      draggedComponent.y = ny;
+      
+      draggedComponent.updateTerminals();
+      runSimulation();
+      draw();
+    }
   } else if (isDrawingWire) {
     // Just let draw loop handle it
   }
@@ -830,8 +1187,14 @@ canvas.addEventListener("dblclick", (e) => {
 // Logic
 // ---------------------------------------------------------
 function addComponent(type, x, y) {
-  components.push(new Component(type, x, y));
+  // Snap initial pos
+  x = Math.round(x / GRID_SIZE) * GRID_SIZE;
+  y = Math.round(y / GRID_SIZE) * GRID_SIZE;
+  
+  const comp = new Component(type, x, y);
+  components.push(comp);
   runSimulation();
+  draw();
   updateEducationalFeedback();
 }
 
@@ -1107,6 +1470,9 @@ function updateEducationalFeedback() {
 // ---------------------------------------------------------
 // Draw
 // ---------------------------------------------------------
+// ---------------------------------------------------------
+// Draw
+// ---------------------------------------------------------
 let animationOffset = 0;
 
 function animate() {
@@ -1118,78 +1484,29 @@ function animate() {
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Draw Wires
+  // 1. Draw Components FIRST (so wires are on top)
+  components.forEach((c) => c.draw(ctx));
+
+  // 2. Draw Wires (Orthogonal)
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
   wires.forEach((w) => {
     const p1 = w.from.comp.getTerminalPos(w.from.terminalId);
     const p2 = w.to.comp.getTerminalPos(w.to.terminalId);
-
-    const cx = (p1.x + p2.x) / 2;
-    const cy = (p1.y + p2.y) / 2 + 20;
-
-    // 1. Draw Base Wire
-    ctx.beginPath();
-    ctx.moveTo(p1.x, p1.y);
-    ctx.quadraticCurveTo(cx, cy, p2.x, p2.y);
-    ctx.strokeStyle = "#2c3e50";
-    ctx.lineWidth = 4;
-    ctx.setLineDash([]);
-    ctx.stroke();
-
-    ctx.strokeStyle = "#3498db";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // 2. Draw Current Animation
-    if (Math.abs(w.current) > 0.001) {
-      ctx.beginPath();
-      ctx.moveTo(p1.x, p1.y);
-      ctx.quadraticCurveTo(cx, cy, p2.x, p2.y);
-
-      ctx.strokeStyle = "#f1c40f"; // Electricity color
-      ctx.lineWidth = 2;
-      ctx.setLineDash([8, 8]);
-
-      const speed = Math.min(Math.abs(w.current) * 5, 5);
-      let dashOffset =
-        w.current > 0 ? animationOffset * speed : -animationOffset * speed;
-
-      ctx.lineDashOffset = dashOffset;
-      ctx.stroke();
-      ctx.setLineDash([]); // Reset
-    }
+    
+    drawOrthogonalWire(ctx, p1, p2, w.current);
   });
 
-  components.forEach((c) => c.draw(ctx));
-
-  // Drawing feedback for wire creation
+  // 3. Drawing feedback for wire creation (Active Drag)
   if (isDrawingWire && wireStartTerminal) {
-    ctx.beginPath();
-    ctx.moveTo(wireStartTerminal.x, wireStartTerminal.y);
-    ctx.lineTo(lastMouseX, lastMouseY);
-    ctx.strokeStyle = "#e67e22";
-    ctx.lineWidth = 3;
-    ctx.setLineDash([5, 5]);
-    ctx.stroke();
-    ctx.stroke();
-    ctx.setLineDash([]);
+    drawOrthogonalWire(ctx, wireStartTerminal, {x: lastMouseX, y: lastMouseY}, 0, true);
   }
 
-  // Draw Selected Terminal Ghost Wire
+  // 4. Draw Selected Terminal Ghost Wire
   if (selectedTerminal) {
-    const p1 = selectedTerminal.comp.getTerminalPos(
-      selectedTerminal.terminalId
-    );
-    ctx.beginPath();
-    ctx.moveTo(p1.x, p1.y);
-    ctx.lineTo(lastMouseX, lastMouseY);
-    ctx.strokeStyle = "#e67e22"; // Same color as drag wire
-    ctx.lineWidth = 3;
-    ctx.setLineDash([5, 5]);
-    ctx.stroke();
-    ctx.setLineDash([]);
+    const p1 = selectedTerminal.comp.getTerminalPos(selectedTerminal.terminalId);
+    drawOrthogonalWire(ctx, p1, {x: lastMouseX, y: lastMouseY}, 0, true);
 
     // Highlight selected terminal source
     ctx.beginPath();
@@ -1216,7 +1533,6 @@ function draw() {
     // Box
     ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
     ctx.beginPath();
-    // Using roundRect if supported, else rect
     if (ctx.roundRect) {
       ctx.roundRect(tx, ty, tw + padding * 2, th + padding * 2, 6);
     } else {
@@ -1229,6 +1545,85 @@ function draw() {
     ctx.textBaseline = "top";
     ctx.fillText(text, tx + padding, ty + padding);
   }
+}
+
+/**
+ * Draws an orthogonal wire between p1 and p2 with rounded corners.
+ * Uses a Z-shape (H-V-H) or L-shape topology.
+ */
+function drawOrthogonalWire(ctx, p1, p2, current = 0, isGhost = false) {
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+
+    const radius = 10; // Corner radius
+
+    // Optimization: Straight Line if aligned
+    if (Math.abs(p1.x - p2.x) < 1 || Math.abs(p1.y - p2.y) < 1) {
+         ctx.lineTo(p2.x, p2.y);
+    } else {
+        const midX = (p1.x + p2.x) / 2;
+        // Routing Logic: Z-shape (H-V-H)
+        
+        // Safety check for radius: if segment is too short, reduce radius
+        // H segment 1: p1.x to midX
+        // V segment: p1.y to p2.y
+        // H segment 2: midX to p2.x
+        
+        const h_dist = Math.abs(midX - p1.x);
+        const v_dist = Math.abs(p2.y - p1.y);
+        
+        let r = radius;
+        if (h_dist < r) r = h_dist;
+        if (v_dist/2 < r) r = v_dist/2; // v_dist covers 2 corners
+
+        // Point A: First Turn (midX, p1.y)
+        // Point B: Second Turn (midX, p2.y)
+        
+        ctx.lineTo(midX - (midX > p1.x ? r : -r), p1.y); // Approach 1st turn
+        ctx.quadraticCurveTo(midX, p1.y, midX, p1.y + (p2.y > p1.y ? r : -r)); // Round 1st turn
+        
+        ctx.lineTo(midX, p2.y - (p2.y > p1.y ? r : -r)); // Approach 2nd turn
+        ctx.quadraticCurveTo(midX, p2.y, midX + (p2.x > midX ? r : -r), p2.y); // Round 2nd turn
+        
+        ctx.lineTo(p2.x, p2.y); // Finish to End
+    }
+
+    // Style Setup
+    if (isGhost) {
+        ctx.strokeStyle = "#e67e22";
+        ctx.lineWidth = 3;
+        ctx.setLineDash([5, 5]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        return;
+    }
+
+    // Normal Wire Style
+    ctx.strokeStyle = "#2c3e50"; // Dark core
+    ctx.lineWidth = 4;
+    ctx.setLineDash([]);
+    ctx.stroke();
+
+    ctx.strokeStyle = "#3498db"; // Blue coat
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Current Animation
+    if (Math.abs(current) > 0.001) {
+        ctx.stroke(); // Redraw path for overlay
+        
+        ctx.strokeStyle = "#f1c40f"; // Electricity color
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 8]);
+
+        const speed = Math.min(Math.abs(current) * 5, 5);
+        let dashOffset = current > 0 ? animationOffset * speed : -animationOffset * speed;
+
+        ctx.lineDashOffset = dashOffset;
+        ctx.stroke();
+        ctx.setLineDash([]); // Reset
+        ctx.lineDashOffset = 0;
+    }
 }
 
 // Global mouse tracker for animation loop usage if needed,
@@ -1389,7 +1784,18 @@ canvas.addEventListener("contextmenu", (e) => {
     // I = V / R
     // If R is huge, I ~ 0.
     let iVal = 0;
-    if (rVal < 1e8) {
+    if (target.type === "battery") {
+        // Battery Current = (EMF - Terminal Voltage) / Internal Resistance
+        // Note: Terminal Voltage is target.voltageDrop
+        // We take Math.abs just to be safe on sign, assuming normal usage.
+        // Actually, if battery is charging (V > 1.5), current reverses, but for simple display magnitude:
+        const vTerm = Math.abs(target.voltageDrop);
+        // If vTerm > BATTERY_VOLTAGE (e.g. being charged), I is negative (entering +), 
+        // but we usually just show magnitude or source current. 
+        // Let's show magnitude of current flowing through it.
+        // I = (V_emf - V_term) / R_int
+        iVal = Math.abs((BATTERY_VOLTAGE - vTerm) / BATTERY_RESISTANCE);
+    } else if (rVal < 1e8) {
       iVal = v / rVal;
     }
     // Convert to mA
@@ -1407,13 +1813,21 @@ window.addEventListener("click", () => {
   }
 });
 
-// Clear
+// Clear - handled in setupGameUI now.
+// clearBtn.addEventListener(...); removed to avoid duplicate listeners or conflicts if not careful,
+// but actually the new setupGameUI adds a listener to 'clear-btn'.
+// The old listener at line ~1698 is:
+/*
 clearBtn.addEventListener("click", () => {
   components = [];
   wires = [];
   updateEducationalFeedback();
   console.log("已清除全部元件");
 });
+*/
+// I should remove it to have a single source of truth for 'Clear' logic in setupGameUI,
+// especially since Challenge Mode might want confirmation logic unified.
+
 
 // Automated Tests hooks (Simplified for concise file)
 function runTestSuite() {
@@ -1421,4 +1835,113 @@ function runTestSuite() {
     "Skipping auto tests for now to save space, user can verify visually."
   );
 }
-window.runTestSuite = runTestSuite;
+
+// ---------------------------------------------------------
+// Game UI Manager
+// ---------------------------------------------------------
+const startScreen = document.getElementById("start-screen");
+const challengeHUD = document.getElementById("challenge-hud");
+const resultsScreen = document.getElementById("results-screen");
+
+// Game State Control
+let currentGameMode = 'menu'; // 'menu', 'normal', 'challenge'
+
+function setupGameUI() {
+    // Mode Selection Buttons
+    document.getElementById("btn-normal-mode").addEventListener("click", () => {
+        startNormalMode();
+    });
+
+    document.getElementById("btn-challenge-mode").addEventListener("click", () => {
+        const count = document.getElementById("challenge-count").value;
+        startChallengeMode(count);
+    });
+
+    document.getElementById("btn-restart").addEventListener("click", () => {
+        showStartScreen();
+    });
+
+    // Sidebar Buttons Logic
+    
+    // Clear Button (Shared)
+    document.getElementById("clear-btn").addEventListener("click", () => {
+        if(confirm("確定要清除所有元件嗎？")) {
+            clearComponents();
+        }
+    });
+
+    // Verify Button (Challenge Only)
+    document.getElementById("verify-btn").addEventListener("click", () => {
+        challengeManager.checkAnswer(components, wires);
+    });
+
+    // Home Button (Shared)
+    document.getElementById("home-btn").addEventListener("click", () => {
+        if (currentGameMode === 'challenge') {
+             if(confirm("確定要放棄挑戰並回到首頁嗎？")) {
+                showStartScreen();
+             }
+        } else {
+            showStartScreen();
+        }
+    });
+}
+
+function showStartScreen() {
+    currentGameMode = 'menu';
+    startScreen.classList.remove("hidden");
+    challengeHUD.classList.add("hidden");
+    resultsScreen.classList.add("hidden");
+    clearComponents();
+}
+
+function startNormalMode() {
+    currentGameMode = 'normal';
+    startScreen.classList.add("hidden");
+    challengeHUD.classList.add("hidden");
+    resultsScreen.classList.add("hidden");
+    clearComponents();
+    setToolboxMode('normal');
+}
+
+function startChallengeMode(count) {
+    currentGameMode = 'challenge';
+    startScreen.classList.add("hidden");
+    challengeHUD.classList.remove("hidden");
+    resultsScreen.classList.add("hidden");
+    clearComponents();
+    setToolboxMode('challenge');
+    challengeManager.start(count);
+}
+
+function setToolboxMode(mode) {
+    const items = document.querySelectorAll(".component-item");
+    const verifyBtn = document.getElementById("verify-btn");
+    
+    // Manage Sidebar Buttons Visibility
+    if (mode === 'challenge') {
+        verifyBtn.classList.remove('hidden');
+    } else {
+        verifyBtn.classList.add('hidden');
+    }
+
+    // Filter Components
+    items.forEach(item => {
+        const type = item.dataset.type;
+        if (mode === 'challenge') {
+            // Only allow Battery, Bulb, Motor
+            if (['battery', 'bulb', 'motor'].includes(type)) { 
+                 item.style.display = "flex";
+            } else {
+                 item.style.display = "none";
+            }
+        } else {
+            item.style.display = "flex";
+        }
+    });
+}
+
+// Initialize UI
+setupGameUI();
+showStartScreen();
+
