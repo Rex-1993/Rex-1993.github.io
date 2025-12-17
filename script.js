@@ -1741,6 +1741,7 @@ const contextMenu = document.getElementById("context-menu");
 const menuR = document.getElementById("menu-resistance");
 const menuV = document.getElementById("menu-voltage");
 const menuI = document.getElementById("menu-current");
+const menuRPM = document.getElementById("menu-rpm");
 
 canvas.addEventListener("contextmenu", (e) => {
   e.preventDefault();
@@ -1806,6 +1807,20 @@ canvas.addEventListener("contextmenu", (e) => {
     // Convert to mA
     const iMa = iVal * 1000;
     menuI.textContent = `電流: ${iMa.toFixed(2)} mA`;
+
+    // 4. Motor RPM
+    if (target.type === "motor") {
+      menuRPM.classList.remove("hidden");
+      // Estimation: Speed factor is 0.05 per tick in animate() (which is ~60fps)
+      // Rotations per second = (voltage * 0.05 * 60) / (2 * PI)  ... roughly
+      // Let's just make up a "Displayed RPM" that looks realistic.
+      // Standard small DC motor ~3000-6000 RPM at 3V?
+      // Visual speed is approx 0.05 rad/frame * 60fps ~ 3 rad/s ~ 0.5 rot/s ~ 30 RPM/V.
+      const rpm = Math.round(v * 30); 
+      menuRPM.textContent = `轉速: ${rpm} rpm`;
+    } else {
+      menuRPM.classList.add("hidden");
+    }
   } else {
     contextMenu.classList.add("hidden");
   }
