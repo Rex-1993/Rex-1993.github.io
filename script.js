@@ -1553,37 +1553,7 @@ function resolveCollision(comp) {
 
 
 
-canvas.addEventListener("dblclick", (e) => {
-  const pos = getMousePos(e);
-  
-  // 1. Check Components
-  for (let i = components.length - 1; i >= 0; i--) {
-    if (components[i].isMouseOver(pos.x, pos.y)) {
-      // Prevent deletion if this component is currently being wired
-      if (
-        (isDrawingWire && wireStartTerminal && wireStartTerminal.comp === components[i]) ||
-        (selectedTerminal && selectedTerminal.comp === components[i])
-      ) {
-         // Maybe show a message or just ignore
-         return;
-      }
-      
-      removeComponent(components[i]);
-      return;
-    }
-  }
 
-  // 2. Check Wires
-  for (let i = wires.length - 1; i >= 0; i--) {
-    if (isMouseOverWire(wires[i], pos.x, pos.y)) {
-      // Remove wire
-      wires.splice(i, 1);
-      runSimulation();
-      updateEducationalFeedback();
-      return;
-    }
-  }
-});
 
 // ---------------------------------------------------------
 // Logic
@@ -2156,52 +2126,32 @@ canvas.addEventListener("touchstart", (e) => {
   touchStartPosition = { x: pos.x, y: pos.y };
   isLongPressMode = false; // Reset
   
-  // 1. Double Tap Detection
-  const currentTime = new Date().getTime();
-  const tapLength = currentTime - lastTouchTime;
-  
-  if (tapLength < 300 && tapLength > 0) {
-      // Double Tap Detected!
-       clearTimeout(longPressTimer); // Cancel any pending long press
-       canvas.dispatchEvent(
-        new MouseEvent("dblclick", {
-          clientX: pos.x + canvas.getBoundingClientRect().left,
-          clientY: pos.y + canvas.getBoundingClientRect().top,
-          bubbles: true,
-          cancelable: true,
-        })
-      );
-      lastTouchTime = 0; // Reset
-  } else {
-      lastTouchTime = currentTime;
-      
-      // 2. Start Long Press Timer
-      clearTimeout(longPressTimer);
-      longPressTimer = setTimeout(() => {
-          // Long Press Triggered!
-          isLongPressMode = true;
-          canvas.dispatchEvent(
-            new MouseEvent("contextmenu", {
-              clientX: pos.x + canvas.getBoundingClientRect().left,
-              clientY: pos.y + canvas.getBoundingClientRect().top,
-              bubbles: true,
-              cancelable: true,
-              button: 2 // Right button
-            })
-          );
-      }, 500); // 500ms for long press
-
-      // Standard click emulation
+  // 1. Start Long Press Timer directly
+  clearTimeout(longPressTimer);
+  longPressTimer = setTimeout(() => {
+      // Long Press Triggered!
+      isLongPressMode = true;
       canvas.dispatchEvent(
-        new MouseEvent("mousedown", {
+        new MouseEvent("contextmenu", {
           clientX: pos.x + canvas.getBoundingClientRect().left,
           clientY: pos.y + canvas.getBoundingClientRect().top,
-          button: 0, // Left click
           bubbles: true,
           cancelable: true,
+          button: 2 // Right button
         })
       );
-  }
+  }, 500); // 500ms for long press
+
+  // Standard click emulation
+  canvas.dispatchEvent(
+    new MouseEvent("mousedown", {
+      clientX: pos.x + canvas.getBoundingClientRect().left,
+      clientY: pos.y + canvas.getBoundingClientRect().top,
+      button: 0, // Left click
+      bubbles: true,
+      cancelable: true,
+    })
+  );
 });
 
 canvas.addEventListener("touchmove", (e) => {
@@ -2284,9 +2234,17 @@ const menuRPM = document.getElementById("menu-rpm");
 const menuDelete = document.getElementById("menu-delete");
 
 // Delete Action
+// Delete Action
 menuDelete.addEventListener("click", () => {
     if (contextMenuTarget) {
-        removeComponent(contextMenuTarget);
+        // Check if it's a wire (has 'from' property) or Component
+        if (contextMenuTarget.from) {
+             wires = wires.filter(w => w !== contextMenuTarget);
+             runSimulation();
+             updateEducationalFeedback();
+        } else {
+             removeComponent(contextMenuTarget);
+        }
         contextMenu.classList.add("hidden");
         contextMenuTarget = null;
     }
@@ -2296,8 +2254,7 @@ canvas.addEventListener("contextmenu", (e) => {
   e.preventDefault();
   const pos = getMousePos(e);
 
-  // Find hovered component
-  // Use reverse loop to find top-most
+  // 1. Find hovered component
   let target = null;
   for (let i = components.length - 1; i >= 0; i--) {
     if (components[i].isMouseOver(pos.x, pos.y)) {
@@ -2305,73 +2262,105 @@ canvas.addEventListener("contextmenu", (e) => {
       break;
     }
   }
+
+  // 2. If no component, Check Wires
+  if (!target) {
+      for (let i = wires.length - 1; i >= 0; i--) {
+        if (isMouseOverWire(wires[i], pos.x, pos.y)) {
+            target = wires[i];
+            break;
+        }
+      }
+  }
   
   contextMenuTarget = target; // Store reference
 
   if (target) {
-    // Show Menu
+    // Show Menu to measure it
     contextMenu.classList.remove("hidden");
 
-    // Position Menu (relative to workspace container)
-    contextMenu.style.left = pos.x + "px";
-    contextMenu.style.top = pos.y + "px";
-
-    // 1. Resistance
-    let rText = "";
-    let rVal = target.resistance;
-
-    // Special case for dynamic switch
-    if (target.type === "switch") {
-      rVal = target.isSwitchOpen ? SWITCH_OPEN_RESISTANCE : SWITCH_RESISTANCE;
-    }
-
-    if (rVal >= 1e8) {
-      rText = "無限大 (∞)";
+    // Reset Menu Items Visibility
+    menuR.classList.remove("hidden");
+    menuV.classList.remove("hidden");
+    menuI.classList.remove("hidden");
+    menuRPM.classList.add("hidden"); // specific
+    
+    // Check type
+    if (target.from) {
+        // --- WIRE ---
+        menuR.classList.add("hidden");
+        menuV.classList.add("hidden");
+        
+        let iMa = Math.abs(target.current * 1000);
+        menuI.textContent = `電流: ${iMa.toFixed(2)} mA`;
+        
     } else {
-      // Round to 2 decimals
-      rText = (Math.floor(rVal * 100) / 100).toFixed(2) + " Ω";
-    }
-    menuR.textContent = `電阻: ${rText}`;
+        // --- COMPONENT ---
+        
+        // 1. Resistance
+        let rText = "";
+        let rVal = target.resistance;
 
-    // 2. Voltage
-    const v = Math.abs(target.voltageDrop);
-    menuV.textContent = `跨壓: ${v.toFixed(2)} V`;
+        // Special case for dynamic switch
+        if (target.type === "switch") {
+          rVal = target.isSwitchOpen ? SWITCH_OPEN_RESISTANCE : SWITCH_RESISTANCE;
+        }
 
-    // 3. Current (mA)
-    // I = V / R
-    // If R is huge, I ~ 0.
-    let iVal = 0;
-    if (target.type === "battery") {
-        // Battery Current = (EMF - Terminal Voltage) / Internal Resistance
-        // Note: Terminal Voltage is target.voltageDrop
-        // We take Math.abs just to be safe on sign, assuming normal usage.
-        // Actually, if battery is charging (V > 1.5), current reverses, but for simple display magnitude:
-        const vTerm = Math.abs(target.voltageDrop);
-        // If vTerm > BATTERY_VOLTAGE (e.g. being charged), I is negative (entering +), 
-        // but we usually just show magnitude or source current. 
-        // Let's show magnitude of current flowing through it.
-        // I = (V_emf - V_term) / R_int
-        iVal = Math.abs((BATTERY_VOLTAGE - vTerm) / BATTERY_RESISTANCE);
-    } else if (rVal < 1e8) {
-      iVal = v / rVal;
-    }
-    // Convert to mA
-    const iMa = iVal * 1000;
-    menuI.textContent = `電流: ${iMa.toFixed(2)} mA`;
+        if (rVal >= 1e8) {
+          rText = "無限大 (∞)";
+        } else {
+          // Round to 2 decimals
+          rText = (Math.floor(rVal * 100) / 100).toFixed(2) + " Ω";
+        }
+        menuR.textContent = `電阻: ${rText}`;
 
-    // 4. Motor RPM
-    if (target.type === "motor") {
-      menuRPM.classList.remove("hidden");
-      // Estimation: Speed factor is 0.05 per tick in animate() (which is ~60fps)
-      // Rotations per second = (voltage * 0.05 * 60) / (2 * PI)  ... roughly
-      // Let's just make up a "Displayed RPM" that looks realistic.
-      // Standard small DC motor ~3000-6000 RPM at 3V?
-      // Visual speed is approx 0.05 rad/frame * 60fps ~ 3 rad/s ~ 0.5 rot/s ~ 30 RPM/V.
-      const rpm = Math.round(v * 30); 
-      menuRPM.textContent = `轉速: ${rpm} rpm`;
-    } else {
-      menuRPM.classList.add("hidden");
+        // 2. Voltage
+        const v = Math.abs(target.voltageDrop);
+        menuV.textContent = `跨壓: ${v.toFixed(2)} V`;
+
+        // 3. Current (mA)
+        let iVal = 0;
+        if (target.type === "battery") {
+            const vTerm = Math.abs(target.voltageDrop);
+            iVal = Math.abs((BATTERY_VOLTAGE - vTerm) / BATTERY_RESISTANCE);
+        } else if (rVal < 1e8) {
+          iVal = v / rVal;
+        }
+        const iMa = iVal * 1000;
+        menuI.textContent = `電流: ${iMa.toFixed(2)} mA`;
+
+        // 4. Motor RPM
+        if (target.type === "motor") {
+          menuRPM.classList.remove("hidden");
+          const rpm = Math.round(v * 30); 
+          menuRPM.textContent = `轉速: ${rpm} rpm`;
+        }
     }
+
+    // Position Menu (Boundary Check)
+    const menuRect = contextMenu.getBoundingClientRect();
+    const workspace = canvas.parentElement; // workspace container
+    const wsRect = workspace.getBoundingClientRect();
+    
+    // pos is relative to canvas (which is same size as workspace roughly)
+    // Actually context-menu is in .workspace, position absolute.
+    // pos.x/y are correct relative coordinates.
+    
+    let menuX = pos.x;
+    let menuY = pos.y;
+    
+    // Check Right Edge
+    if (menuX + menuRect.width > wsRect.width) {
+        menuX = wsRect.width - menuRect.width - 5;
+    }
+    // Check Bottom Edge
+    if (menuY + menuRect.height > wsRect.height) {
+        menuY = wsRect.height - menuRect.height - 5;
+    }
+    
+    contextMenu.style.left = menuX + "px";
+    contextMenu.style.top = menuY + "px";
+
   } else {
     contextMenu.classList.add("hidden");
   }
