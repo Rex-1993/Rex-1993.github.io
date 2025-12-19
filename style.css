@@ -18,15 +18,15 @@
 
 /* Global Utility */
 .hidden {
-    display: none !important;
+  display: none !important;
 }
-
 
 body {
   font-family: "Noto Sans TC", sans-serif;
   background: linear-gradient(120deg, #a1c4fd 0%, #c2e9fb 100%);
   color: var(--text-color);
-  height: 100vh;
+  height: 100vh; /* Fallback */
+  height: 100dvh;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -38,7 +38,8 @@ body {
 .container {
   background: var(--panel-bg);
   width: 95vw;
-  height: 90vh;
+  height: 90vh; /* Fallback */
+  height: 90dvh;
   border-radius: var(--border-radius);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
   display: flex;
@@ -68,6 +69,7 @@ main {
   flex: 1;
   gap: 20px;
   overflow: hidden;
+  min-height: 0; /* Important for nested flex scroll */
 }
 
 .sidebar {
@@ -155,6 +157,7 @@ main {
   flex-direction: column;
   gap: 5px; /* Extremely tight spacing as requested */
   width: 100%;
+  padding-bottom: env(safe-area-inset-bottom, 0px); /* Safe area padding */
 }
 
 .btn {
@@ -168,7 +171,7 @@ main {
   width: 100%;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   /* Reset individual margins */
-  margin-top: 0; 
+  margin-top: 0;
 }
 
 .btn.danger {
@@ -320,8 +323,11 @@ main {
   .container {
     padding: 10px;
     width: 100vw;
-    height: 100vh;
+    height: 100vh; /* Fallback */
+    height: 100dvh;
     border-radius: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   header {
@@ -350,7 +356,7 @@ main {
   }
 
   .btn {
-    margin-top: 0; 
+    margin-top: 0;
     padding: 8px; /* Slightly smaller buttons */
     font-size: 0.9rem;
   }
@@ -587,10 +593,10 @@ main {
 }
 
 .hud-controls {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
 }
 
 .btn-success {
@@ -608,38 +614,38 @@ main {
 }
 
 .btn-clear-hud {
-    background: #ff6b6b;
-    color: white;
-    padding: 10px 40px;
-    font-size: 1.2rem;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    box-shadow: 0 4px 10px rgba(255, 107, 107, 0.4);
-    transition: transform 0.2s;
-    width: 100%;
-    margin-bottom: 5px;
+  background: #ff6b6b;
+  color: white;
+  padding: 10px 40px;
+  font-size: 1.2rem;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(255, 107, 107, 0.4);
+  transition: transform 0.2s;
+  width: 100%;
+  margin-bottom: 5px;
 }
 
 .btn-clear-hud:hover {
-    transform: scale(1.05);
-    background: #ff4757;
+  transform: scale(1.05);
+  background: #ff4757;
 }
 
 .btn-quit {
-    background: rgba(231, 76, 60, 0.9);
-    color: white;
-    padding: 8px 20px;
-    font-size: 1rem;
-    border: none;
-    border-radius: 20px;
-    cursor: pointer;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    transition: background 0.2s;
+  background: rgba(231, 76, 60, 0.9);
+  color: white;
+  padding: 8px 20px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  transition: background 0.2s;
 }
 
 .btn-quit:hover {
-    background: #c0392b;
+  background: #c0392b;
 }
 
 .btn-success:hover {
@@ -670,22 +676,22 @@ main {
 }
 
 .weakness-container h3 {
-    margin-bottom: 10px;
-    color: #856404;
-    font-size: 1.1rem;
+  margin-bottom: 10px;
+  color: #856404;
+  font-size: 1.1rem;
 }
 
 .weakness-item {
-    color: #856404;
-    margin-bottom: 5px;
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  color: #856404;
+  margin-bottom: 5px;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .weakness-item::before {
-    content: "⚠️";
+  content: "⚠️";
 }
 
 .mistakes-container {
