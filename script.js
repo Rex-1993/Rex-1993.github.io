@@ -945,6 +945,211 @@ class ChallengeManager {
 
 const challengeManager = new ChallengeManager();
 
+// ---------------------------------------------------------
+// PathFinder (A* Routing)
+// ---------------------------------------------------------
+class PathFinder {
+  constructor(cellSize = 20) {
+    this.cellSize = cellSize;
+    this.grid = [];
+    this.width = 0;
+    this.height = 0;
+  }
+
+  init(canvasWidth, canvasHeight) {
+    this.width = Math.ceil(canvasWidth / this.cellSize);
+    this.height = Math.ceil(canvasHeight / this.cellSize);
+    // Reset grid: 0 = Empty, 1 = Component (Blocked), 2 = Wire (High Cost)
+    this.grid = new Uint8Array(this.width * this.height).fill(0);
+  }
+
+  markRect(x, y, w, h, value) {
+    const minX = Math.floor((x - w/2) / this.cellSize);
+    const maxX = Math.ceil((x + w/2) / this.cellSize);
+    const minY = Math.floor((y - h/2) / this.cellSize);
+    const maxY = Math.ceil((y + h/2) / this.cellSize);
+
+    for (let j = minY; j < maxY; j++) {
+      for (let i = minX; i < maxX; i++) {
+        if (i >= 0 && i < this.width && j >= 0 && j < this.height) {
+          const idx = j * this.width + i;
+          // Don't overwrite Blocked (1) with Wire (2)
+          if (this.grid[idx] !== 1) {
+             this.grid[idx] = value;
+          }
+        }
+      }
+    }
+  }
+
+  // A* Pathfinding
+  findPath(startPos, endPos) {
+    const sx = Math.floor(startPos.x / this.cellSize);
+    const sy = Math.floor(startPos.y / this.cellSize);
+    const ex = Math.floor(endPos.x / this.cellSize);
+    const ey = Math.floor(endPos.y / this.cellSize);
+
+    // If start or end are out of bounds, fallback to direct
+    if (sx < 0 || sx >= this.width || sy < 0 || sy >= this.height) return [startPos, endPos];
+    if (ex < 0 || ex >= this.width || ey < 0 || ey >= this.height) return [startPos, endPos];
+
+    // Node: { x, y, g, h, parent }
+    const openSet = [];
+    const closedSet = new Set();
+    
+    const startNode = { x: sx, y: sy, g: 0, h: this.heuristic(sx, sy, ex, ey), parent: null };
+    openSet.push(startNode);
+
+    // Helper to get index
+    const getIdx = (x, y) => y * this.width + x;
+
+    // Protection against infinite loops or too heavy calc
+    let iterations = 0;
+    const maxIterations = 2000;
+
+    while (openSet.length > 0) {
+      if (iterations++ > maxIterations) {
+          // Fallback to Z-shape if too complex
+          return [startPos, {x: endPos.x, y: startPos.y}, endPos]; 
+      }
+
+      // Get node with lowest f = g + h
+      let lowestIndex = 0;
+      for (let i = 1; i < openSet.length; i++) {
+        if (openSet[i].g + openSet[i].h < openSet[lowestIndex].g + openSet[lowestIndex].h) {
+          lowestIndex = i;
+        }
+      }
+      
+      const current = openSet[lowestIndex];
+
+      // Found goal?
+      if (current.x === ex && current.y === ey) {
+        // Reconstruct path
+        const path = [];
+        let temp = current;
+        while (temp) {
+          // Convert grid back to pixel center
+          path.push({ 
+              x: temp.x * this.cellSize + this.cellSize / 2, 
+              y: temp.y * this.cellSize + this.cellSize / 2 
+          });
+          temp = temp.parent;
+        }
+        // Replace start/end with exact coords for precision
+        path[path.length - 1] = startPos;
+        path[0] = endPos;
+        return path.reverse();
+      }
+
+      // Move current to closed
+      openSet.splice(lowestIndex, 1);
+      closedSet.add(getIdx(current.x, current.y));
+
+      // Neighbors (Up, Down, Left, Right)
+      const neighbors = [
+        { x: current.x, y: current.y - 1 },
+        { x: current.x, y: current.y + 1 },
+        { x: current.x - 1, y: current.y },
+        { x: current.x + 1, y: current.y }
+      ];
+
+      for (let neighbor of neighbors) {
+        if (neighbor.x < 0 || neighbor.x >= this.width || neighbor.y < 0 || neighbor.y >= this.height) continue;
+        
+        const nIdx = getIdx(neighbor.x, neighbor.y);
+        if (closedSet.has(nIdx)) continue;
+
+        // Cost Calculation
+        // Base cost = 1
+        // Wire overlap = 10 (High cost but passable)
+        // Component = 1000 (Blocked)
+        const cellVal = this.grid[nIdx];
+        
+        let moveCost = 1;
+        if (cellVal === 2) moveCost = 5; // Overlap wire penalty
+        if (cellVal === 1) {
+             // Exception: If this is the GOAL node (connecting to a terminal inside a component's potential box), allow it.
+             // But terminals are usually at edges.
+             // Let's assume strict blocking unless it's the target node.
+             if (!(neighbor.x === ex && neighbor.y === ey) && !(neighbor.x === sx && neighbor.y === sy)) {
+                moveCost = 1000;
+             }
+        }
+
+        // Penalty for turning (to encourage straight lines)
+        if (current.parent) {
+             const prevDx = current.x - current.parent.x;
+             const prevDy = current.y - current.parent.y;
+             const curDx = neighbor.x - current.x;
+             const curDy = neighbor.y - current.y;
+             if (prevDx !== curDx || prevDy !== curDy) {
+                 moveCost += 1; // Turn penalty
+             }
+        }
+
+        const tentativeG = current.g + moveCost;
+
+        let neighborNode = openSet.find(n => n.x === neighbor.x && n.y === neighbor.y);
+        
+        if (!neighborNode) {
+            neighborNode = { x: neighbor.x, y: neighbor.y, g: tentativeG, h: this.heuristic(neighbor.x, neighbor.y, ex, ey), parent: current };
+            openSet.push(neighborNode);
+        } else if (tentativeG < neighborNode.g) {
+            neighborNode.g = tentativeG;
+            neighborNode.parent = current;
+        }
+      }
+    }
+
+    // No path found
+    return [startPos, endPos];
+  }
+
+  simplifyPath(path) {
+    if (path.length <= 2) return path;
+    
+    const newPath = [path[0]];
+    let lastPoint = path[0];
+    // Direction from 0 to 1
+    // Note: Use coarse check to handle float precision if needed, 
+    // but grid points are exact integers (or .5), start/end might be float.
+    
+    for (let i = 1; i < path.length - 1; i++) {
+       const prev = newPath[newPath.length - 1];
+       const curr = path[i];
+       const next = path[i+1];
+       
+       // Check if curr is redundant (collinear with prev and next)
+       // (curr.x - prev.x) / (curr.y - prev.y) == (next.x - curr.x) / (next.y - curr.y)
+       // Or simpler: check if vertical or horizontal alignment is maintained.
+       // Since they are grid aligned:
+       const dx1 = curr.x - prev.x;
+       const dy1 = curr.y - prev.y;
+       const dx2 = next.x - curr.x;
+       const dy2 = next.y - curr.y;
+       
+       // Normalize direction roughly (since magnitude changes)
+       // Cross product should be 0 for collinear
+       if (Math.abs(dx1 * dy2 - dy1 * dx2) < 1) {
+           // Collinear, skip curr
+           continue;
+       }
+       
+       newPath.push(curr);
+    }
+    newPath.push(path[path.length - 1]);
+    return newPath;
+  }
+
+  heuristic(x1, y1, x2, y2) {
+    // Manhattan distance
+    return Math.abs(x1 - x2) + Math.abs(y1 - y2);
+  }
+}
+
+const pathFinder = new PathFinder();
+
 function clearComponents() {
     // Helper to access global
     components = [];
@@ -1170,19 +1375,116 @@ canvas.addEventListener("mouseup", (e) => {
       }
     }
 
+    // Resolve Collision on Drop
+    if (draggedComponent) {
+        resolveCollision(draggedComponent);
+    }
+
     isDragging = false;
     draggedComponent = null;
     runSimulation();
   }
 });
 
+// ---------------------------------------------------------
+// Collision Avoidance Logic
+// ---------------------------------------------------------
+function checkCollision(comp, x, y) {
+  // Helper to get dims
+  const getDims = (c) => {
+      let w = 60, h = 60;
+      if (c.type === "battery") w = 120;
+      if (c.type === "motor") w = 80;
+      if (c.type === "paperclip" || c.type === "eraser") w = 90;
+      if (c.type === "lego") w = 80;
+      if (c.type === "coin") w = 54;
+      h = c.height || 60;
+      if (c.rotation % 2 !== 0) {
+        [w, h] = [h, w];
+      }
+      return {w, h};
+  };
+
+  const d1 = getDims(comp);
+  const buffer = 10; 
+  const l1 = x - d1.w/2 - buffer;
+  const r1 = x + d1.w/2 + buffer;
+  const t1 = y - d1.h/2 - buffer;
+  const b1 = y + d1.h/2 + buffer;
+
+  for (let other of components) {
+    if (other === comp) continue;
+    
+    const d2 = getDims(other);
+    const l2 = other.x - d2.w/2;
+    const r2 = other.x + d2.w/2;
+    const t2 = other.y - d2.h/2;
+    const b2 = other.y + d2.h/2;
+
+    if (l1 < r2 && r1 > l2 && t1 < b2 && b1 > t2) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function resolveCollision(comp) {
+    const startX = comp.x;
+    const startY = comp.y;
+    
+    if(!checkCollision(comp, startX, startY)) return;
+
+    let d = 1;
+    // Spiral search
+    while(d < 15) { 
+        for (let dx = -d; dx <= d; dx++) {
+            for (let dy = -d; dy <= d; dy++) {
+                if (Math.abs(dx) !== d && Math.abs(dy) !== d) continue;
+                
+                const nx = startX + dx * GRID_SIZE;
+                const ny = startY + dy * GRID_SIZE;
+                
+                if (!checkCollision(comp, nx, ny)) {
+                    comp.x = nx;
+                    comp.y = ny;
+                    comp.updateTerminals();
+                    return;
+                }
+            }
+        }
+        d++;
+    }
+}
+
 
 
 canvas.addEventListener("dblclick", (e) => {
   const pos = getMousePos(e);
+  
+  // 1. Check Components
   for (let i = components.length - 1; i >= 0; i--) {
     if (components[i].isMouseOver(pos.x, pos.y)) {
+      // Prevent deletion if this component is currently being wired
+      if (
+        (isDrawingWire && wireStartTerminal && wireStartTerminal.comp === components[i]) ||
+        (selectedTerminal && selectedTerminal.comp === components[i])
+      ) {
+         // Maybe show a message or just ignore
+         return;
+      }
+      
       removeComponent(components[i]);
+      return;
+    }
+  }
+
+  // 2. Check Wires
+  for (let i = wires.length - 1; i >= 0; i--) {
+    if (isMouseOverWire(wires[i], pos.x, pos.y)) {
+      // Remove wire
+      wires.splice(i, 1);
+      runSimulation();
+      updateEducationalFeedback();
       return;
     }
   }
@@ -1191,13 +1493,82 @@ canvas.addEventListener("dblclick", (e) => {
 // ---------------------------------------------------------
 // Logic
 // ---------------------------------------------------------
+
+// Helper for wire hit test
+function isMouseOverWire(wire, mx, my) {
+  if (!wire.path || wire.path.length < 2) return false;
+  
+  const tolerance = 8; // Hit radius
+
+  for (let i = 0; i < wire.path.length - 1; i++) {
+    const p1 = wire.path[i];
+    const p2 = wire.path[i+1];
+    
+    if (isPointOnLine(mx, my, p1.x, p1.y, p2.x, p2.y, tolerance)) {
+        return true;
+    }
+  }
+  return false;
+}
+
+function isPointOnLine(px, py, x1, y1, x2, y2, tolerance) {
+  // Bounding box check first
+  if (px < Math.min(x1, x2) - tolerance || px > Math.max(x1, x2) + tolerance ||
+      py < Math.min(y1, y2) - tolerance || py > Math.max(y1, y2) + tolerance) {
+    return false;
+  }
+
+  // Distance to segment
+  const A = px - x1;
+  const B = py - y1;
+  const C = x2 - x1;
+  const D = y2 - y1;
+
+  const dot = A * C + B * D;
+  const len_sq = C * C + D * D;
+  let param = -1;
+  if (len_sq !== 0) // in case of 0 length line
+      param = dot / len_sq;
+
+  let xx, yy;
+
+  if (param < 0) {
+    xx = x1;
+    yy = y1;
+  }
+  else if (param > 1) {
+    xx = x2;
+    yy = y2;
+  }
+  else {
+    xx = x1 + param * C;
+    yy = y1 + param * D;
+  }
+
+  const dx = px - xx;
+  const dy = py - yy;
+  return (dx * dx + dy * dy) < tolerance * tolerance;
+}
+
 function addComponent(type, x, y) {
   // Snap initial pos
   x = Math.round(x / GRID_SIZE) * GRID_SIZE;
   y = Math.round(y / GRID_SIZE) * GRID_SIZE;
   
   const comp = new Component(type, x, y);
+  
+  // Resolve Collision immediately
+  resolveCollision(comp, components); // Note: components doesn't include comp yet, so pass list? 
+  // Actually, resolveCollision expects comp to be potentially in list or ignores it. 
+  // Here comp is NOT in list 'components' yet.
+  // My logic below will handle 'ignoreComp'. If it's not in list, no need to ignore.
+  
   components.push(comp);
+  
+  // Re-resolve just in case pushing changed something (unlikely) or for consistency if I change resolveCollision to look at 'components' global.
+  // Actually `checkCollision` iterates `components`.
+  resolveCollision(comp);
+
   runSimulation();
   draw();
   updateEducationalFeedback();
@@ -1496,22 +1867,71 @@ function draw() {
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
-  wires.forEach((w) => {
-    const p1 = w.from.comp.getTerminalPos(w.from.terminalId);
-    const p2 = w.to.comp.getTerminalPos(w.to.terminalId);
-    
-    drawOrthogonalWire(ctx, p1, p2, w.current);
-  });
+    // -----------------------------------------------------------------
+    // New Routing Logic
+    // -----------------------------------------------------------------
+    // Initialize PathFinder
+    pathFinder.init(canvas.width, canvas.height);
+
+    // 1. Mark Obstacles (Components)
+    components.forEach(comp => {
+         // Slightly smaller bbox for routing so wires can hug tightly? 
+         // Or standard bbox? Standard is safer.
+         // Get BBox from isMouseOver logic or similar.
+         let w = 60, h = 60;
+         if (comp.type === "battery") w = 120;
+         if (comp.type === "motor") w = 80;
+         if (comp.type === "paperclip" || comp.type === "eraser") w = 90;
+         if (comp.type === "lego") w = 80;
+         if (comp.type === "coin") w = 54;
+         h = comp.height || 60;
+         
+         // Rotation swap
+         if (comp.rotation % 2 !== 0) {
+            [w, h] = [h, w];
+         }
+         
+         // Shrink slightly to expose terminals at edges
+         pathFinder.markRect(comp.x, comp.y, w - 10, h - 10, 1);
+    });
+
+    // 2. Draw Wires with Routing
+    wires.forEach((w) => {
+        const p1 = w.from.comp.getTerminalPos(w.from.terminalId);
+        const p2 = w.to.comp.getTerminalPos(w.to.terminalId);
+        
+        // Find Path
+        const path = pathFinder.simplifyPath(pathFinder.findPath(p1, p2));
+        w.path = path; // Cache for hit testing
+        
+        // Mark path as HIGH_COST (2) for subsequent wires
+        // We only mark the segments.
+        for(let i=0; i<path.length-1; i++) {
+             // Mark a line... simplified: just mark the approximate cells
+             // This is an optimization; skipping complex line rasterization for now.
+             // Just marking the waypoints might be enough to discourage exact overlap if nodes align.
+             pathFinder.markRect(path[i].x, path[i].y, 10, 10, 2);
+        }
+
+        drawPath(ctx, path, w.current);
+    });
 
   // 3. Drawing feedback for wire creation (Active Drag)
   if (isDrawingWire && wireStartTerminal) {
-    drawOrthogonalWire(ctx, wireStartTerminal, {x: lastMouseX, y: lastMouseY}, 0, true);
+    const p1 = wireStartTerminal;
+    const p2 = {x: lastMouseX, y: lastMouseY};
+    // Don't use full A* for ghost to save perf, or use it for consistency?
+    // Use it for consistency so user sees where it will go.
+    const path = pathFinder.simplifyPath(pathFinder.findPath(p1, p2));
+    drawPath(ctx, path, 0, true);
   }
 
   // 4. Draw Selected Terminal Ghost Wire
   if (selectedTerminal) {
     const p1 = selectedTerminal.comp.getTerminalPos(selectedTerminal.terminalId);
-    drawOrthogonalWire(ctx, p1, {x: lastMouseX, y: lastMouseY}, 0, true);
+    const p2 = {x: lastMouseX, y: lastMouseY};
+    const path = pathFinder.simplifyPath(pathFinder.findPath(p1, p2));
+    drawPath(ctx, path, 0, true);
 
     // Highlight selected terminal source
     ctx.beginPath();
@@ -1553,45 +1973,34 @@ function draw() {
 }
 
 /**
- * Draws an orthogonal wire between p1 and p2 with rounded corners.
- * Uses a Z-shape (H-V-H) or L-shape topology.
+ * Draws a multi-segment path with rounded corners.
  */
-function drawOrthogonalWire(ctx, p1, p2, current = 0, isGhost = false) {
+function drawPath(ctx, points, current = 0, isGhost = false) {
+    if (points.length < 2) return;
+
     ctx.beginPath();
-    ctx.moveTo(p1.x, p1.y);
+    ctx.moveTo(points[0].x, points[0].y);
 
-    const radius = 10; // Corner radius
+    const radius = 10; 
 
-    // Optimization: Straight Line if aligned
-    if (Math.abs(p1.x - p2.x) < 1 || Math.abs(p1.y - p2.y) < 1) {
-         ctx.lineTo(p2.x, p2.y);
-    } else {
-        const midX = (p1.x + p2.x) / 2;
-        // Routing Logic: Z-shape (H-V-H)
+    for (let i = 1; i < points.length - 1; i++) {
+        const p0 = points[i - 1];
+        const p1 = points[i];
+        const p2 = points[i + 1];
         
-        // Safety check for radius: if segment is too short, reduce radius
-        // H segment 1: p1.x to midX
-        // V segment: p1.y to p2.y
-        // H segment 2: midX to p2.x
+        // We draw a line from p0 towards p1, but stop before p1 to round the corner
+        // Actually since we iterate, we just need to draw FROM current point TO near the corner then curve
         
-        const h_dist = Math.abs(midX - p1.x);
-        const v_dist = Math.abs(p2.y - p1.y);
+        // This is tricky with simple lineTo iteration.
+        // Better: `arcTo` is perfect for this.
+        // ctx.arcTo(x1, y1, x2, y2, radius)
+        // usage: from current pen position, draw line to (x1,y1) then curve towards (x2,y2)
         
-        let r = radius;
-        if (h_dist < r) r = h_dist;
-        if (v_dist/2 < r) r = v_dist/2; // v_dist covers 2 corners
-
-        // Point A: First Turn (midX, p1.y)
-        // Point B: Second Turn (midX, p2.y)
-        
-        ctx.lineTo(midX - (midX > p1.x ? r : -r), p1.y); // Approach 1st turn
-        ctx.quadraticCurveTo(midX, p1.y, midX, p1.y + (p2.y > p1.y ? r : -r)); // Round 1st turn
-        
-        ctx.lineTo(midX, p2.y - (p2.y > p1.y ? r : -r)); // Approach 2nd turn
-        ctx.quadraticCurveTo(midX, p2.y, midX + (p2.x > midX ? r : -r), p2.y); // Round 2nd turn
-        
-        ctx.lineTo(p2.x, p2.y); // Finish to End
+        ctx.arcTo(p1.x, p1.y, p2.x, p2.y, radius);
     }
+    
+    // Last segment
+    ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
 
     // Style Setup
     if (isGhost) {
