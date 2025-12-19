@@ -365,7 +365,7 @@ class Component {
         ctx.strokeStyle = "#27ae60";
         ctx.lineWidth = 1;
         ctx.stroke();
-        
+
         ctx.rotate((Math.PI * 2) / 3);
       }
       // Center Hub
@@ -680,7 +680,7 @@ class CircuitAnalyzer {
     // A simple series chain means:
     // C1 --(n1)-- C2 --(n2)-- C3
     // Nodes n1, n2 must only connect these specific components.
-    
+
     // Let's create a subgraph of just these components.
     // Count degree of each node considering ONLY these components.
     const nodeDegree = new Map();
@@ -696,9 +696,9 @@ class CircuitAnalyzer {
     let ends = 0;
     let mids = 0;
     for (let d of nodeDegree.values()) {
-        if (d === 1) ends++;
-        else if (d === 2) mids++;
-        else return false; // Branching or loops
+      if (d === 1) ends++;
+      else if (d === 2) mids++;
+      else return false; // Branching or loops
     }
 
     return ends === 2 && mids === (comps.length - 1);
@@ -715,9 +715,9 @@ class CircuitAnalyzer {
 
     // All others must have {n0, n1} match {nA, nB} (order irrelevant)
     for (let i = 1; i < comps.length; i++) {
-        const c = connMap.get(comps[i].id);
-        const match = (c.n0 === nA && c.n1 === nB) || (c.n0 === nB && c.n1 === nA);
-        if (!match) return false;
+      const c = connMap.get(comps[i].id);
+      const match = (c.n0 === nA && c.n1 === nB) || (c.n0 === nB && c.n1 === nA);
+      if (!match) return false;
     }
     return true;
   }
@@ -727,220 +727,220 @@ class CircuitAnalyzer {
 // Challenge Manager
 // ---------------------------------------------------------
 class ChallengeManager {
-    constructor() {
-        this.questions = [];
-        this.currentIndex = 0;
-        this.score = 0;
-        this.mistakes = [];
-        this.totalQuestions = 5;
-        // Tracking for Analysis
-        this.stats = {
-            'series_batt': { tries: 0, fails: 0, label: "電池串聯" },
-            'parallel_batt': { tries: 0, fails: 0, label: "電池並聯" },
-            'series_bulb': { tries: 0, fails: 0, label: "燈泡串聯" },
-            'parallel_bulb': { tries: 0, fails: 0, label: "燈泡並聯" },
-            'series_motor': { tries: 0, fails: 0, label: "馬達串聯" },
-            'parallel_motor': { tries: 0, fails: 0, label: "馬達並聯" }
-        };
+  constructor() {
+    this.questions = [];
+    this.currentIndex = 0;
+    this.score = 0;
+    this.mistakes = [];
+    this.totalQuestions = 5;
+    // Tracking for Analysis
+    this.stats = {
+      'series_batt': { tries: 0, fails: 0, label: "電池串聯" },
+      'parallel_batt': { tries: 0, fails: 0, label: "電池並聯" },
+      'series_bulb': { tries: 0, fails: 0, label: "燈泡串聯" },
+      'parallel_bulb': { tries: 0, fails: 0, label: "燈泡並聯" },
+      'series_motor': { tries: 0, fails: 0, label: "馬達串聯" },
+      'parallel_motor': { tries: 0, fails: 0, label: "馬達並聯" }
+    };
+  }
+
+  start(count) {
+    this.totalQuestions = parseInt(count);
+    this.score = 0;
+    this.currentIndex = 0;
+    this.mistakes = [];
+    // Reset stats
+    Object.keys(this.stats).forEach(key => {
+      this.stats[key].tries = 0;
+      this.stats[key].fails = 0;
+    });
+
+    this.generateQuestions();
+    this.updateHUD();
+  }
+
+  generateQuestions() {
+    this.questions = [];
+    const usedSignatures = new Set(); // Avoid exact duplicates in one run
+
+    // Helper to add unique question
+    const addQ = (type, param, text) => {
+      const sig = `${type}-${param}`;
+      if (usedSignatures.has(sig) && usedSignatures.size < 15) return false; // Try to be unique
+
+      this.questions.push({ type, param, text });
+      usedSignatures.add(sig);
+      return true;
+    };
+
+    // Procedural Generation Loop
+    // Limits:
+    // Battery: 1~3 (Practically 2-3 for Series/Parallel)
+    // Bulb: 1~4 (2-4 for Series/Parallel)
+    // Motor: 1~4 (2-4 for Series/Parallel)
+
+    let attempts = 0;
+    while (this.questions.length < this.totalQuestions && attempts < 1000) {
+      attempts++;
+      const category = Math.random(); // Random selection
+
+      // Weighted distribution could be added here
+
+      if (category < 0.15) {
+        // Series Batt (2-3)
+        const n = 2 + Math.floor(Math.random() * 2); // 2 or 3
+        addQ('series_batt', n, `請串聯 ${n} 顆電池供電給 1 顆燈泡`);
+      } else if (category < 0.3) {
+        // Parallel Batt (2-3)
+        const n = 2 + Math.floor(Math.random() * 2); // 2 or 3
+        addQ('parallel_batt', n, `請並聯 ${n} 顆電池供電給 1 顆燈泡`);
+      } else if (category < 0.53) {
+        // Series Bulb (2-4)
+        const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
+        addQ('series_bulb', n, `請使用 1 顆電池，串聯 ${n} 顆燈泡`);
+      } else if (category < 0.76) {
+        // Parallel Bulb (2-4)
+        const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
+        addQ('parallel_bulb', n, `請使用 1 顆電池，並聯 ${n} 顆燈泡`);
+      } else if (category < 0.88) {
+        // Series Motor (2-4)
+        const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
+        addQ('series_motor', n, `請使用 1 顆電池，串聯 ${n} 顆馬達`);
+      } else {
+        // Parallel Motor (2-4)
+        const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
+        addQ('parallel_motor', n, `請使用 1 顆電池，並聯 ${n} 顆馬達`);
+      }
+    }
+  }
+
+  updateHUD() {
+    document.getElementById('score-val').textContent = this.score;
+    document.getElementById('total-val').textContent = this.totalQuestions;
+    document.getElementById('question-text').textContent =
+      `Q${this.currentIndex + 1}: ${this.questions[this.currentIndex].text}`;
+  }
+
+  checkAnswer(components, wires) {
+    const q = this.questions[this.currentIndex];
+
+    // Update Stats
+    if (this.stats[q.type]) {
+      this.stats[q.type].tries++;
     }
 
-    start(count) {
-        this.totalQuestions = parseInt(count);
-        this.score = 0;
-        this.currentIndex = 0;
-        this.mistakes = [];
-        // Reset stats
-        Object.keys(this.stats).forEach(key => {
-            this.stats[key].tries = 0;
-            this.stats[key].fails = 0;
-        });
-        
-        this.generateQuestions();
-        this.updateHUD();
+    const analysis = CircuitAnalyzer.analyze(components, wires);
+
+    // 1. Filter relevant components
+    const battUsed = analysis.batts;
+    const bulbUsed = analysis.bulbs;
+    const motorUsed = analysis.motors;
+
+    let isCorrect = false;
+    let failReason = "電路連接錯誤";
+
+    // Logic Check
+    if (q.type === 'series_batt') {
+      const needBatts = q.param;
+      if (battUsed.length !== needBatts) failReason = `電池數量錯誤 (需要 ${needBatts}, 使用 ${battUsed.length})`;
+      else if (bulbUsed.length < 1) failReason = "沒有連接燈泡";
+      else if (!analysis.checkSeries(battUsed)) failReason = "電池沒有正確串聯";
+      else isCorrect = true;
+    } else if (q.type === 'parallel_batt') {
+      const needBatts = q.param;
+      if (battUsed.length !== needBatts) failReason = `電池數量錯誤 (需要 ${needBatts}, 使用 ${battUsed.length})`;
+      else if (bulbUsed.length < 1) failReason = "沒有連接燈泡";
+      else if (!analysis.checkParallel(battUsed)) failReason = "電池沒有正確並聯";
+      else isCorrect = true;
+    } else if (q.type === 'parallel_bulb') {
+      const needBulbs = q.param;
+      if (bulbUsed.length !== needBulbs) failReason = `燈泡數量錯誤 (需要 ${needBulbs}, 使用 ${bulbUsed.length})`;
+      else if (!analysis.checkParallel(bulbUsed)) failReason = "燈泡沒有正確並聯";
+      else if (battUsed.length < 1) failReason = "沒有連接電池";
+      else isCorrect = true;
+    } else if (q.type === 'series_bulb') {
+      const needBulbs = q.param;
+      if (bulbUsed.length !== needBulbs) failReason = `燈泡數量錯誤 (需要 ${needBulbs}, 使用 ${bulbUsed.length})`;
+      else if (!analysis.checkSeries(bulbUsed)) failReason = "燈泡沒有正確串聯";
+      else if (battUsed.length < 1) failReason = "沒有連接電池";
+      else isCorrect = true;
+    } else if (q.type === 'parallel_motor') {
+      const needMotors = q.param;
+      if (motorUsed.length !== needMotors) failReason = `馬達數量錯誤 (需要 ${needMotors}, 使用 ${motorUsed.length})`;
+      else if (!analysis.checkParallel(motorUsed)) failReason = "馬達沒有正確並聯";
+      else if (battUsed.length < 1) failReason = "沒有連接電池";
+      else isCorrect = true;
+    } else if (q.type === 'series_motor') {
+      const needMotors = q.param;
+      if (motorUsed.length !== needMotors) failReason = `馬達數量錯誤 (需要 ${needMotors}, 使用 ${motorUsed.length})`;
+      else if (!analysis.checkSeries(motorUsed)) failReason = "馬達沒有正確串聯";
+      else if (battUsed.length < 1) failReason = "沒有連接電池";
+      else isCorrect = true;
     }
 
-    generateQuestions() {
-        this.questions = [];
-        const usedSignatures = new Set(); // Avoid exact duplicates in one run
-
-        // Helper to add unique question
-        const addQ = (type, param, text) => {
-             const sig = `${type}-${param}`;
-             if(usedSignatures.has(sig) && usedSignatures.size < 15) return false; // Try to be unique
-             
-             this.questions.push({ type, param, text });
-             usedSignatures.add(sig);
-             return true;
-        };
-
-        // Procedural Generation Loop
-        // Limits:
-        // Battery: 1~3 (Practically 2-3 for Series/Parallel)
-        // Bulb: 1~4 (2-4 for Series/Parallel)
-        // Motor: 1~4 (2-4 for Series/Parallel)
-
-        let attempts = 0;
-        while(this.questions.length < this.totalQuestions && attempts < 1000) {
-            attempts++;
-            const category = Math.random(); // Random selection
-
-            // Weighted distribution could be added here
-            
-            if (category < 0.15) { 
-                // Series Batt (2-3)
-                const n = 2 + Math.floor(Math.random() * 2); // 2 or 3
-                addQ('series_batt', n, `請串聯 ${n} 顆電池供電給 1 顆燈泡`);
-            } else if (category < 0.3) {
-                 // Parallel Batt (2-3)
-                 const n = 2 + Math.floor(Math.random() * 2); // 2 or 3
-                 addQ('parallel_batt', n, `請並聯 ${n} 顆電池供電給 1 顆燈泡`);
-            } else if (category < 0.53) {
-                // Series Bulb (2-4)
-                const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
-                addQ('series_bulb', n, `請使用 1 顆電池，串聯 ${n} 顆燈泡`);
-            } else if (category < 0.76) {
-                // Parallel Bulb (2-4)
-                const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
-                addQ('parallel_bulb', n, `請使用 1 顆電池，並聯 ${n} 顆燈泡`);
-            } else if (category < 0.88) {
-                // Series Motor (2-4)
-                const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
-                addQ('series_motor', n, `請使用 1 顆電池，串聯 ${n} 顆馬達`);
-            } else {
-                // Parallel Motor (2-4)
-                const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
-                addQ('parallel_motor', n, `請使用 1 顆電池，並聯 ${n} 顆馬達`);
-            }
-        }
+    if (isCorrect) {
+      this.score++;
+      alert("答對了！");
+    } else {
+      alert(`答錯了！\n原因: ${failReason}`);
+      this.mistakes.push({ q: q.text, reason: failReason });
+      // Record Failure for analysis
+      if (this.stats[q.type]) {
+        this.stats[q.type].fails++;
+      }
     }
 
-    updateHUD() {
-        document.getElementById('score-val').textContent = this.score;
-        document.getElementById('total-val').textContent = this.totalQuestions;
-        document.getElementById('question-text').textContent = 
-            `Q${this.currentIndex + 1}: ${this.questions[this.currentIndex].text}`;
+    this.currentIndex++;
+    if (this.currentIndex >= this.totalQuestions) {
+      this.endGame();
+    } else {
+      clearComponents();
+      this.updateHUD();
     }
+  }
 
-    checkAnswer(components, wires) {
-        const q = this.questions[this.currentIndex];
-        
-        // Update Stats
-        if(this.stats[q.type]) {
-            this.stats[q.type].tries++;
-        }
+  endGame() {
+    document.getElementById('challenge-hud').classList.add('hidden');
+    document.getElementById('results-screen').classList.remove('hidden');
+    document.getElementById('final-score-val').textContent = this.score;
 
-        const analysis = CircuitAnalyzer.analyze(components, wires);
-        
-        // 1. Filter relevant components
-        const battUsed = analysis.batts;
-        const bulbUsed = analysis.bulbs;
-        const motorUsed = analysis.motors;
+    // Mistakes List
+    const list = document.getElementById('mistakes-list');
+    list.innerHTML = "";
+    this.mistakes.forEach(m => {
+      const item = document.createElement('div');
+      item.className = 'mistake-item';
+      item.innerHTML = `<div class="mistake-q">${m.q}</div><div class="mistake-reason">${m.reason}</div>`;
+      list.appendChild(item);
+    });
 
-        let isCorrect = false;
-        let failReason = "電路連接錯誤";
+    // Application of Weakness Analysis
+    const wReport = document.getElementById('weakness-report');
+    const wList = document.getElementById('weakness-list');
+    wList.innerHTML = "";
 
-        // Logic Check
-        if (q.type === 'series_batt') {
-            const needBatts = q.param;
-            if (battUsed.length !== needBatts) failReason = `電池數量錯誤 (需要 ${needBatts}, 使用 ${battUsed.length})`;
-            else if (bulbUsed.length < 1) failReason = "沒有連接燈泡";
-            else if (!analysis.checkSeries(battUsed)) failReason = "電池沒有正確串聯";
-            else isCorrect = true; 
-        } else if (q.type === 'parallel_batt') {
-            const needBatts = q.param;
-            if (battUsed.length !== needBatts) failReason = `電池數量錯誤 (需要 ${needBatts}, 使用 ${battUsed.length})`;
-            else if (bulbUsed.length < 1) failReason = "沒有連接燈泡";
-            else if (!analysis.checkParallel(battUsed)) failReason = "電池沒有正確並聯";
-            else isCorrect = true;
-        } else if (q.type === 'parallel_bulb') {
-            const needBulbs = q.param;
-            if (bulbUsed.length !== needBulbs) failReason = `燈泡數量錯誤 (需要 ${needBulbs}, 使用 ${bulbUsed.length})`;
-            else if (!analysis.checkParallel(bulbUsed)) failReason = "燈泡沒有正確並聯";
-            else if(battUsed.length < 1) failReason = "沒有連接電池";
-            else isCorrect = true;
-        } else if (q.type === 'series_bulb') {
-             const needBulbs = q.param;
-            if (bulbUsed.length !== needBulbs) failReason = `燈泡數量錯誤 (需要 ${needBulbs}, 使用 ${bulbUsed.length})`;
-            else if (!analysis.checkSeries(bulbUsed)) failReason = "燈泡沒有正確串聯";
-            else if(battUsed.length < 1) failReason = "沒有連接電池";
-            else isCorrect = true;
-        } else if (q.type === 'parallel_motor') {
-            const needMotors = q.param;
-            if (motorUsed.length !== needMotors) failReason = `馬達數量錯誤 (需要 ${needMotors}, 使用 ${motorUsed.length})`;
-            else if (!analysis.checkParallel(motorUsed)) failReason = "馬達沒有正確並聯";
-            else if(battUsed.length < 1) failReason = "沒有連接電池";
-            else isCorrect = true;
-        } else if (q.type === 'series_motor') {
-            const needMotors = q.param;
-            if (motorUsed.length !== needMotors) failReason = `馬達數量錯誤 (需要 ${needMotors}, 使用 ${motorUsed.length})`;
-            else if (!analysis.checkSeries(motorUsed)) failReason = "馬達沒有正確串聯";
-            else if(battUsed.length < 1) failReason = "沒有連接電池";
-            else isCorrect = true;
-        }
+    let hasWeakness = false;
+    Object.keys(this.stats).forEach(key => {
+      const s = this.stats[key];
+      if (s.tries > 0 && s.fails > 0) {
+        // If they failed at least once
+        hasWeakness = true;
+        const item = document.createElement('div');
+        item.className = 'weakness-item';
+        // Simple logic: If fails > 0, mention it. Could be % based.
+        // "燈泡串聯需加強 (錯誤 1/2)"
+        item.textContent = `${s.label}需加強 (錯誤 ${s.fails}/${s.tries}題)`;
+        wList.appendChild(item);
+      }
+    });
 
-        if (isCorrect) {
-            this.score++;
-            alert("答對了！");
-        } else {
-            alert(`答錯了！\n原因: ${failReason}`);
-            this.mistakes.push({ q: q.text, reason: failReason });
-            // Record Failure for analysis
-            if(this.stats[q.type]) {
-                this.stats[q.type].fails++;
-            }
-        }
-
-        this.currentIndex++;
-        if (this.currentIndex >= this.totalQuestions) {
-            this.endGame();
-        } else {
-            clearComponents(); 
-            this.updateHUD();
-        }
+    if (hasWeakness) {
+      wReport.classList.remove('hidden');
+    } else {
+      wReport.classList.add('hidden');
+      // Maybe show message "完美無缺！" if score is max?
     }
-
-    endGame() {
-        document.getElementById('challenge-hud').classList.add('hidden');
-        document.getElementById('results-screen').classList.remove('hidden');
-        document.getElementById('final-score-val').textContent = this.score;
-        
-        // Mistakes List
-        const list = document.getElementById('mistakes-list');
-        list.innerHTML = "";
-        this.mistakes.forEach(m => {
-            const item = document.createElement('div');
-            item.className = 'mistake-item';
-            item.innerHTML = `<div class="mistake-q">${m.q}</div><div class="mistake-reason">${m.reason}</div>`;
-            list.appendChild(item);
-        });
-
-        // Application of Weakness Analysis
-        const wReport = document.getElementById('weakness-report');
-        const wList = document.getElementById('weakness-list');
-        wList.innerHTML = "";
-        
-        let hasWeakness = false;
-        Object.keys(this.stats).forEach(key => {
-            const s = this.stats[key];
-            if (s.tries > 0 && s.fails > 0) {
-                // If they failed at least once
-                hasWeakness = true;
-                const item = document.createElement('div');
-                item.className = 'weakness-item';
-                // Simple logic: If fails > 0, mention it. Could be % based.
-                // "燈泡串聯需加強 (錯誤 1/2)"
-                item.textContent = `${s.label}需加強 (錯誤 ${s.fails}/${s.tries}題)`;
-                wList.appendChild(item);
-            }
-        });
-
-        if (hasWeakness) {
-            wReport.classList.remove('hidden');
-        } else {
-            wReport.classList.add('hidden');
-            // Maybe show message "完美無缺！" if score is max?
-        }
-    }
+  }
 }
 
 const challengeManager = new ChallengeManager();
@@ -964,10 +964,10 @@ class PathFinder {
   }
 
   markRect(x, y, w, h, value) {
-    const minX = Math.floor((x - w/2) / this.cellSize);
-    const maxX = Math.ceil((x + w/2) / this.cellSize);
-    const minY = Math.floor((y - h/2) / this.cellSize);
-    const maxY = Math.ceil((y + h/2) / this.cellSize);
+    const minX = Math.floor((x - w / 2) / this.cellSize);
+    const maxX = Math.ceil((x + w / 2) / this.cellSize);
+    const minY = Math.floor((y - h / 2) / this.cellSize);
+    const maxY = Math.ceil((y + h / 2) / this.cellSize);
 
     for (let j = minY; j < maxY; j++) {
       for (let i = minX; i < maxX; i++) {
@@ -975,7 +975,7 @@ class PathFinder {
           const idx = j * this.width + i;
           // Don't overwrite Blocked (1) with Wire (2)
           if (this.grid[idx] !== 1) {
-             this.grid[idx] = value;
+            this.grid[idx] = value;
           }
         }
       }
@@ -996,7 +996,7 @@ class PathFinder {
     // Node: { x, y, g, h, parent }
     const openSet = [];
     const closedSet = new Set();
-    
+
     const startNode = { x: sx, y: sy, g: 0, h: this.heuristic(sx, sy, ex, ey), parent: null };
     openSet.push(startNode);
 
@@ -1009,8 +1009,8 @@ class PathFinder {
 
     while (openSet.length > 0) {
       if (iterations++ > maxIterations) {
-          // Fallback to Z-shape if too complex
-          return [startPos, {x: endPos.x, y: startPos.y}, endPos]; 
+        // Fallback to Z-shape if too complex
+        return [startPos, { x: endPos.x, y: startPos.y }, endPos];
       }
 
       // Get node with lowest f = g + h
@@ -1020,7 +1020,7 @@ class PathFinder {
           lowestIndex = i;
         }
       }
-      
+
       const current = openSet[lowestIndex];
 
       // Found goal?
@@ -1030,9 +1030,9 @@ class PathFinder {
         let temp = current;
         while (temp) {
           // Convert grid back to pixel center
-          path.push({ 
-              x: temp.x * this.cellSize + this.cellSize / 2, 
-              y: temp.y * this.cellSize + this.cellSize / 2 
+          path.push({
+            x: temp.x * this.cellSize + this.cellSize / 2,
+            y: temp.y * this.cellSize + this.cellSize / 2
           });
           temp = temp.parent;
         }
@@ -1056,7 +1056,7 @@ class PathFinder {
 
       for (let neighbor of neighbors) {
         if (neighbor.x < 0 || neighbor.x >= this.width || neighbor.y < 0 || neighbor.y >= this.height) continue;
-        
+
         const nIdx = getIdx(neighbor.x, neighbor.y);
         if (closedSet.has(nIdx)) continue;
 
@@ -1065,39 +1065,39 @@ class PathFinder {
         // Wire overlap = 10 (High cost but passable)
         // Component = 1000 (Blocked)
         const cellVal = this.grid[nIdx];
-        
+
         let moveCost = 1;
         if (cellVal === 2) moveCost = 5; // Overlap wire penalty
         if (cellVal === 1) {
-             // Exception: If this is the GOAL node (connecting to a terminal inside a component's potential box), allow it.
-             // But terminals are usually at edges.
-             // Let's assume strict blocking unless it's the target node.
-             if (!(neighbor.x === ex && neighbor.y === ey) && !(neighbor.x === sx && neighbor.y === sy)) {
-                moveCost = 1000;
-             }
+          // Exception: If this is the GOAL node (connecting to a terminal inside a component's potential box), allow it.
+          // But terminals are usually at edges.
+          // Let's assume strict blocking unless it's the target node.
+          if (!(neighbor.x === ex && neighbor.y === ey) && !(neighbor.x === sx && neighbor.y === sy)) {
+            moveCost = 1000;
+          }
         }
 
         // Penalty for turning (to encourage straight lines)
         if (current.parent) {
-             const prevDx = current.x - current.parent.x;
-             const prevDy = current.y - current.parent.y;
-             const curDx = neighbor.x - current.x;
-             const curDy = neighbor.y - current.y;
-             if (prevDx !== curDx || prevDy !== curDy) {
-                 moveCost += 1; // Turn penalty
-             }
+          const prevDx = current.x - current.parent.x;
+          const prevDy = current.y - current.parent.y;
+          const curDx = neighbor.x - current.x;
+          const curDy = neighbor.y - current.y;
+          if (prevDx !== curDx || prevDy !== curDy) {
+            moveCost += 1; // Turn penalty
+          }
         }
 
         const tentativeG = current.g + moveCost;
 
         let neighborNode = openSet.find(n => n.x === neighbor.x && n.y === neighbor.y);
-        
+
         if (!neighborNode) {
-            neighborNode = { x: neighbor.x, y: neighbor.y, g: tentativeG, h: this.heuristic(neighbor.x, neighbor.y, ex, ey), parent: current };
-            openSet.push(neighborNode);
+          neighborNode = { x: neighbor.x, y: neighbor.y, g: tentativeG, h: this.heuristic(neighbor.x, neighbor.y, ex, ey), parent: current };
+          openSet.push(neighborNode);
         } else if (tentativeG < neighborNode.g) {
-            neighborNode.g = tentativeG;
-            neighborNode.parent = current;
+          neighborNode.g = tentativeG;
+          neighborNode.parent = current;
         }
       }
     }
@@ -1108,35 +1108,35 @@ class PathFinder {
 
   simplifyPath(path) {
     if (path.length <= 2) return path;
-    
+
     const newPath = [path[0]];
     let lastPoint = path[0];
     // Direction from 0 to 1
     // Note: Use coarse check to handle float precision if needed, 
     // but grid points are exact integers (or .5), start/end might be float.
-    
+
     for (let i = 1; i < path.length - 1; i++) {
-       const prev = newPath[newPath.length - 1];
-       const curr = path[i];
-       const next = path[i+1];
-       
-       // Check if curr is redundant (collinear with prev and next)
-       // (curr.x - prev.x) / (curr.y - prev.y) == (next.x - curr.x) / (next.y - curr.y)
-       // Or simpler: check if vertical or horizontal alignment is maintained.
-       // Since they are grid aligned:
-       const dx1 = curr.x - prev.x;
-       const dy1 = curr.y - prev.y;
-       const dx2 = next.x - curr.x;
-       const dy2 = next.y - curr.y;
-       
-       // Normalize direction roughly (since magnitude changes)
-       // Cross product should be 0 for collinear
-       if (Math.abs(dx1 * dy2 - dy1 * dx2) < 1) {
-           // Collinear, skip curr
-           continue;
-       }
-       
-       newPath.push(curr);
+      const prev = newPath[newPath.length - 1];
+      const curr = path[i];
+      const next = path[i + 1];
+
+      // Check if curr is redundant (collinear with prev and next)
+      // (curr.x - prev.x) / (curr.y - prev.y) == (next.x - curr.x) / (next.y - curr.y)
+      // Or simpler: check if vertical or horizontal alignment is maintained.
+      // Since they are grid aligned:
+      const dx1 = curr.x - prev.x;
+      const dy1 = curr.y - prev.y;
+      const dx2 = next.x - curr.x;
+      const dy2 = next.y - curr.y;
+
+      // Normalize direction roughly (since magnitude changes)
+      // Cross product should be 0 for collinear
+      if (Math.abs(dx1 * dy2 - dy1 * dx2) < 1) {
+        // Collinear, skip curr
+        continue;
+      }
+
+      newPath.push(curr);
     }
     newPath.push(path[path.length - 1]);
     return newPath;
@@ -1151,10 +1151,10 @@ class PathFinder {
 const pathFinder = new PathFinder();
 
 function clearComponents() {
-    // Helper to access global
-    components = [];
-    wires = [];
-    runSimulation();
+  // Helper to access global
+  components = [];
+  wires = [];
+  runSimulation();
 }
 
 
@@ -1167,16 +1167,43 @@ function isHoveringTerminal(comp, tid) {
 // ---------------------------------------------------------
 // Helper Functions
 // ---------------------------------------------------------
+// ---------------------------------------------------------
+// Helper Functions
+// ---------------------------------------------------------
+// Canvas Resize Handling with Device Pixel Ratio Support
 function resizeCanvas() {
   const container = document.querySelector(".workspace-container");
   if (container) {
-    canvas.width = container.clientWidth;
-    canvas.height = container.clientHeight;
-    // draw(); // Managed by animation loop
+    const dpr = window.devicePixelRatio || 1;
+    const rect = container.getBoundingClientRect();
+
+    // Set actual size in memory (scaled to account for extra pixel density)
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+
+    // Normalize coordinate system to use CSS pixels
+    ctx.scale(dpr, dpr);
+
+    // Store logical dimensions for reference
+    canvas.logicalWidth = rect.width;
+    canvas.logicalHeight = rect.height;
+
+    // Redraw immediately
+    runSimulation();
+    draw();
   }
 }
-window.addEventListener("resize", resizeCanvas);
-setTimeout(resizeCanvas, 100);
+
+// Robust Resize Observer
+const resizeObserver = new ResizeObserver(() => {
+  resizeCanvas();
+});
+const containerEl = document.querySelector(".workspace-container");
+if (containerEl) {
+  resizeObserver.observe(containerEl);
+}
+// Initial call
+resizeCanvas();
 
 function getMousePos(evt) {
   const rect = canvas.getBoundingClientRect();
@@ -1211,7 +1238,7 @@ toolboxItems.forEach((item) => {
   item.addEventListener("dragstart", (e) => {
     e.dataTransfer.setData("type", item.dataset.type);
   });
-  
+
   // Mobile Touch Logic (Tap to Add OR Drag to Drop)
   let touchStartX = 0;
   let touchStartY = 0;
@@ -1221,95 +1248,101 @@ toolboxItems.forEach((item) => {
   let isTouchDragging = false;
 
   const onTouchMove = (e) => {
-      const touch = e.touches[0];
-      const moveX = touch.clientX;
-      const moveY = touch.clientY;
-      lastMoveX = moveX;
-      lastMoveY = moveY;
-      
-      const dist = Math.hypot(moveX - touchStartX, moveY - touchStartY);
+    const touch = e.touches[0];
+    const moveX = touch.clientX;
+    const moveY = touch.clientY;
+    lastMoveX = moveX;
+    lastMoveY = moveY;
 
-      if (dist > 10 && !isTouchDragging) {
-          isTouchDragging = true;
-          // Create Ghost
-          ghostEl = item.cloneNode(true);
-          ghostEl.style.position = 'fixed';
-          ghostEl.style.left = moveX + 'px';
-          ghostEl.style.top = moveY + 'px';
-          ghostEl.style.opacity = '0.8';
-          ghostEl.style.pointerEvents = 'none'; // Passthrough
-          ghostEl.style.zIndex = '9999';
-          ghostEl.style.width = item.offsetWidth + 'px'; // Match size
-          document.body.appendChild(ghostEl);
-      }
+    const dist = Math.hypot(moveX - touchStartX, moveY - touchStartY);
 
-      if (isTouchDragging) {
-          e.preventDefault(); // Stop scrolling
-          if(ghostEl) {
-              ghostEl.style.left = (moveX - ghostEl.offsetWidth/2) + 'px';
-              ghostEl.style.top = (moveY - ghostEl.offsetHeight/2) + 'px';
-          }
+    if (dist > 10 && !isTouchDragging) {
+      isTouchDragging = true;
+      // Create Ghost
+      ghostEl = item.cloneNode(true);
+      ghostEl.style.position = 'fixed';
+      ghostEl.style.left = moveX + 'px';
+      ghostEl.style.top = moveY + 'px';
+      ghostEl.style.opacity = '0.8';
+      ghostEl.style.pointerEvents = 'none'; // Passthrough
+      ghostEl.style.zIndex = '9999';
+      ghostEl.style.width = item.offsetWidth + 'px'; // Match size
+      document.body.appendChild(ghostEl);
+    }
+
+    if (isTouchDragging) {
+      e.preventDefault(); // Stop scrolling
+      if (ghostEl) {
+        ghostEl.style.left = (moveX - ghostEl.offsetWidth / 2) + 'px';
+        ghostEl.style.top = (moveY - ghostEl.offsetHeight / 2) + 'px';
       }
+    }
   };
 
   const onTouchEnd = (e) => {
-      document.removeEventListener('touchmove', onTouchMove);
-      document.removeEventListener('touchend', onTouchEnd);
+    document.removeEventListener('touchmove', onTouchMove);
+    document.removeEventListener('touchend', onTouchEnd);
 
-      if (isTouchDragging) {
-          // Drop Logic
-          if (ghostEl) {
-              // Check if dropped on canvas
-              // Use lastMoveX/Y fallback if changedTouches is weird, though changedTouches usually works
-              const touch = e.changedTouches[0];
-              const clientX = touch ? touch.clientX : lastMoveX;
-              const clientY = touch ? touch.clientY : lastMoveY;
+    if (isTouchDragging) {
+      // Drop Logic
+      if (ghostEl) {
+        // Check if dropped on canvas
+        // Use lastMoveX/Y fallback if changedTouches is weird, though changedTouches usually works
+        const touch = e.changedTouches[0];
+        const clientX = touch ? touch.clientX : lastMoveX;
+        const clientY = touch ? touch.clientY : lastMoveY;
 
-              const cRect = canvas.getBoundingClientRect();
-              
-              if (clientX >= cRect.left && clientX <= cRect.right &&
-                  clientY >= cRect.top && clientY <= cRect.bottom) {
-                  
-                  // Calculate canvas pos
-                  const cx = clientX - cRect.left;
-                  const cy = clientY - cRect.top;
-                  
-                  // Execute Add (Ensure numbers)
-                  if (!isNaN(cx) && !isNaN(cy)) {
-                      addComponent(item.dataset.type, cx, cy);
-                      
-                      // Force extra redraw next tick to ensure visibility
-                      setTimeout(() => {
-                          runSimulation();
-                          draw();
-                      }, 10);
-                  }
-              }
-              
-              ghostEl.remove();
-              ghostEl = null;
+        const cRect = canvas.getBoundingClientRect();
+
+        if (clientX >= cRect.left && clientX <= cRect.right &&
+          clientY >= cRect.top && clientY <= cRect.bottom) {
+
+          // Calculate canvas pos
+          // Input clientX/Y are in viewport coordinates.
+          // rect is in viewport coordinates.
+          // Connection: rect.left/top are CSS values.
+          // cx, cy will be CSS pixel offsets relative to canvas top-left.
+          // Since we scaled the context with ctx.scale(dpr, dpr), 
+          // drawing at (cx, cy) works perfectly.
+          const cx = clientX - cRect.left;
+          const cy = clientY - cRect.top;
+
+          // Execute Add (Ensure numbers)
+          if (!isNaN(cx) && !isNaN(cy)) {
+            addComponent(item.dataset.type, cx, cy);
+
+            // Force extra redraw next tick to ensure visibility
+            setTimeout(() => {
+              runSimulation();
+              draw();
+            }, 10);
           }
+        }
+
+        ghostEl.remove();
+        ghostEl = null;
       }
-      isTouchDragging = false;
+    }
+    isTouchDragging = false;
   };
 
   item.addEventListener("touchstart", (e) => {
-      touchStartX = e.touches[0].clientX;
-      touchStartY = e.touches[0].clientY;
-      lastMoveX = touchStartX;
-      lastMoveY = touchStartY;
-      isTouchDragging = false;
-      
-      document.addEventListener('touchmove', onTouchMove, { passive: false });
-      document.addEventListener('touchend', onTouchEnd);
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+    lastMoveX = touchStartX;
+    lastMoveY = touchStartY;
+    isTouchDragging = false;
+
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend', onTouchEnd);
   }, { passive: false });
 
   // Click Handler (Mouse & Tap)
   item.addEventListener("click", (e) => {
-      // Just add to center of workspace
-      const rx = 100 + Math.random() * 50;
-      const ry = 100 + Math.random() * 50;
-      addComponent(item.dataset.type, rx, ry);
+    // Just add to center of workspace
+    const rx = 100 + Math.random() * 50;
+    const ry = 100 + Math.random() * 50;
+    addComponent(item.dataset.type, rx, ry);
   });
 });
 
@@ -1355,13 +1388,13 @@ canvas.addEventListener("mousemove", (e) => {
       // Snap to Grid
       let nx = pos.x - offset.x;
       let ny = pos.y - offset.y;
-      
+
       nx = Math.round(nx / GRID_SIZE) * GRID_SIZE;
       ny = Math.round(ny / GRID_SIZE) * GRID_SIZE;
 
       draggedComponent.x = nx;
       draggedComponent.y = ny;
-      
+
       draggedComponent.updateTerminals();
       runSimulation();
       draw();
@@ -1426,7 +1459,7 @@ canvas.addEventListener("mouseup", (e) => {
     if (dist < 5 && draggedComponent && e.button === 0) {
       // Prevent rotation if this was a long press context menu
       if (isLongPressMode) return;
-      
+
       // Prevent rotation if this is part of a double click (click 2)
       if (e.detail > 1) return;
 
@@ -1472,7 +1505,7 @@ canvas.addEventListener("mouseup", (e) => {
 
     // Resolve Collision on Drop
     if (draggedComponent) {
-        resolveCollision(draggedComponent);
+      resolveCollision(draggedComponent);
     }
 
     isDragging = false;
@@ -1487,34 +1520,34 @@ canvas.addEventListener("mouseup", (e) => {
 function checkCollision(comp, x, y) {
   // Helper to get dims
   const getDims = (c) => {
-      let w = 60, h = 60;
-      if (c.type === "battery") w = 120;
-      if (c.type === "motor") w = 80;
-      if (c.type === "paperclip" || c.type === "eraser") w = 90;
-      if (c.type === "lego") w = 80;
-      if (c.type === "coin") w = 54;
-      h = c.height || 60;
-      if (c.rotation % 2 !== 0) {
-        [w, h] = [h, w];
-      }
-      return {w, h};
+    let w = 60, h = 60;
+    if (c.type === "battery") w = 120;
+    if (c.type === "motor") w = 80;
+    if (c.type === "paperclip" || c.type === "eraser") w = 90;
+    if (c.type === "lego") w = 80;
+    if (c.type === "coin") w = 54;
+    h = c.height || 60;
+    if (c.rotation % 2 !== 0) {
+      [w, h] = [h, w];
+    }
+    return { w, h };
   };
 
   const d1 = getDims(comp);
-  const buffer = 10; 
-  const l1 = x - d1.w/2 - buffer;
-  const r1 = x + d1.w/2 + buffer;
-  const t1 = y - d1.h/2 - buffer;
-  const b1 = y + d1.h/2 + buffer;
+  const buffer = 10;
+  const l1 = x - d1.w / 2 - buffer;
+  const r1 = x + d1.w / 2 + buffer;
+  const t1 = y - d1.h / 2 - buffer;
+  const b1 = y + d1.h / 2 + buffer;
 
   for (let other of components) {
     if (other === comp) continue;
-    
+
     const d2 = getDims(other);
-    const l2 = other.x - d2.w/2;
-    const r2 = other.x + d2.w/2;
-    const t2 = other.y - d2.h/2;
-    const b2 = other.y + d2.h/2;
+    const l2 = other.x - d2.w / 2;
+    const r2 = other.x + d2.w / 2;
+    const t2 = other.y - d2.h / 2;
+    const b2 = other.y + d2.h / 2;
 
     if (l1 < r2 && r1 > l2 && t1 < b2 && b1 > t2) {
       return true;
@@ -1524,31 +1557,31 @@ function checkCollision(comp, x, y) {
 }
 
 function resolveCollision(comp) {
-    const startX = comp.x;
-    const startY = comp.y;
-    
-    if(!checkCollision(comp, startX, startY)) return;
+  const startX = comp.x;
+  const startY = comp.y;
 
-    let d = 1;
-    // Spiral search
-    while(d < 15) { 
-        for (let dx = -d; dx <= d; dx++) {
-            for (let dy = -d; dy <= d; dy++) {
-                if (Math.abs(dx) !== d && Math.abs(dy) !== d) continue;
-                
-                const nx = startX + dx * GRID_SIZE;
-                const ny = startY + dy * GRID_SIZE;
-                
-                if (!checkCollision(comp, nx, ny)) {
-                    comp.x = nx;
-                    comp.y = ny;
-                    comp.updateTerminals();
-                    return;
-                }
-            }
+  if (!checkCollision(comp, startX, startY)) return;
+
+  let d = 1;
+  // Spiral search
+  while (d < 15) {
+    for (let dx = -d; dx <= d; dx++) {
+      for (let dy = -d; dy <= d; dy++) {
+        if (Math.abs(dx) !== d && Math.abs(dy) !== d) continue;
+
+        const nx = startX + dx * GRID_SIZE;
+        const ny = startY + dy * GRID_SIZE;
+
+        if (!checkCollision(comp, nx, ny)) {
+          comp.x = nx;
+          comp.y = ny;
+          comp.updateTerminals();
+          return;
         }
-        d++;
+      }
     }
+    d++;
+  }
 }
 
 
@@ -1562,15 +1595,15 @@ function resolveCollision(comp) {
 // Helper for wire hit test
 function isMouseOverWire(wire, mx, my) {
   if (!wire.path || wire.path.length < 2) return false;
-  
+
   const tolerance = 8; // Hit radius
 
   for (let i = 0; i < wire.path.length - 1; i++) {
     const p1 = wire.path[i];
-    const p2 = wire.path[i+1];
-    
+    const p2 = wire.path[i + 1];
+
     if (isPointOnLine(mx, my, p1.x, p1.y, p2.x, p2.y, tolerance)) {
-        return true;
+      return true;
     }
   }
   return false;
@@ -1579,7 +1612,7 @@ function isMouseOverWire(wire, mx, my) {
 function isPointOnLine(px, py, x1, y1, x2, y2, tolerance) {
   // Bounding box check first
   if (px < Math.min(x1, x2) - tolerance || px > Math.max(x1, x2) + tolerance ||
-      py < Math.min(y1, y2) - tolerance || py > Math.max(y1, y2) + tolerance) {
+    py < Math.min(y1, y2) - tolerance || py > Math.max(y1, y2) + tolerance) {
     return false;
   }
 
@@ -1593,7 +1626,7 @@ function isPointOnLine(px, py, x1, y1, x2, y2, tolerance) {
   const len_sq = C * C + D * D;
   let param = -1;
   if (len_sq !== 0) // in case of 0 length line
-      param = dot / len_sq;
+    param = dot / len_sq;
 
   let xx, yy;
 
@@ -1621,17 +1654,17 @@ function addComponent(type, x, y) {
   // Snap initial pos
   x = Math.round(x / GRID_SIZE) * GRID_SIZE;
   y = Math.round(y / GRID_SIZE) * GRID_SIZE;
-  
+
   const comp = new Component(type, x, y);
-  
+
   // Resolve Collision immediately
   resolveCollision(comp, components); // Note: components doesn't include comp yet, so pass list? 
   // Actually, resolveCollision expects comp to be potentially in list or ignores it. 
   // Here comp is NOT in list 'components' yet.
   // My logic below will handle 'ignoreComp'. If it's not in list, no need to ignore.
-  
+
   components.push(comp);
-  
+
   // Re-resolve just in case pushing changed something (unlikely) or for consistency if I change resolveCollision to look at 'components' global.
   // Actually `checkCollision` iterates `components`.
   resolveCollision(comp);
@@ -1647,8 +1680,8 @@ function removeComponent(comp) {
 
   // Check if we are drawing a wire from this component (half-connected dashed line)
   if (isDrawingWire && wireStartTerminal && wireStartTerminal.comp === comp) {
-      isDrawingWire = false;
-      wireStartTerminal = null;
+    isDrawingWire = false;
+    wireStartTerminal = null;
   }
 
   // Check if we have selected a terminal on this component (for click-click connection)
@@ -1937,7 +1970,11 @@ function animate() {
 }
 
 function draw() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Use logical size if available (set by resizeCanvas), else fallback
+  const w = canvas.logicalWidth || canvas.width;
+  const h = canvas.logicalHeight || canvas.height;
+
+  ctx.clearRect(0, 0, w, h);
 
   // 1. Draw Components FIRST (so wires are on top)
   components.forEach((c) => c.draw(ctx));
@@ -1946,59 +1983,59 @@ function draw() {
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
 
-    // -----------------------------------------------------------------
-    // New Routing Logic
-    // -----------------------------------------------------------------
-    // Initialize PathFinder
-    pathFinder.init(canvas.width, canvas.height);
+  // -----------------------------------------------------------------
+  // New Routing Logic
+  // -----------------------------------------------------------------
+  // Initialize PathFinder
+  pathFinder.init(w, h);
 
-    // 1. Mark Obstacles (Components)
-    components.forEach(comp => {
-         // Slightly smaller bbox for routing so wires can hug tightly? 
-         // Or standard bbox? Standard is safer.
-         // Get BBox from isMouseOver logic or similar.
-         let w = 60, h = 60;
-         if (comp.type === "battery") w = 120;
-         if (comp.type === "motor") w = 80;
-         if (comp.type === "paperclip" || comp.type === "eraser") w = 90;
-         if (comp.type === "lego") w = 80;
-         if (comp.type === "coin") w = 54;
-         h = comp.height || 60;
-         
-         // Rotation swap
-         if (comp.rotation % 2 !== 0) {
-            [w, h] = [h, w];
-         }
-         
-         // Shrink slightly to expose terminals at edges
-         pathFinder.markRect(comp.x, comp.y, w - 10, h - 10, 1);
-    });
+  // 1. Mark Obstacles (Components)
+  components.forEach(comp => {
+    // Slightly smaller bbox for routing so wires can hug tightly? 
+    // Or standard bbox? Standard is safer.
+    // Get BBox from isMouseOver logic or similar.
+    let w = 60, h = 60;
+    if (comp.type === "battery") w = 120;
+    if (comp.type === "motor") w = 80;
+    if (comp.type === "paperclip" || comp.type === "eraser") w = 90;
+    if (comp.type === "lego") w = 80;
+    if (comp.type === "coin") w = 54;
+    h = comp.height || 60;
 
-    // 2. Draw Wires with Routing
-    wires.forEach((w) => {
-        const p1 = w.from.comp.getTerminalPos(w.from.terminalId);
-        const p2 = w.to.comp.getTerminalPos(w.to.terminalId);
-        
-        // Find Path
-        const path = pathFinder.simplifyPath(pathFinder.findPath(p1, p2));
-        w.path = path; // Cache for hit testing
-        
-        // Mark path as HIGH_COST (2) for subsequent wires
-        // We only mark the segments.
-        for(let i=0; i<path.length-1; i++) {
-             // Mark a line... simplified: just mark the approximate cells
-             // This is an optimization; skipping complex line rasterization for now.
-             // Just marking the waypoints might be enough to discourage exact overlap if nodes align.
-             pathFinder.markRect(path[i].x, path[i].y, 10, 10, 2);
-        }
+    // Rotation swap
+    if (comp.rotation % 2 !== 0) {
+      [w, h] = [h, w];
+    }
 
-        drawPath(ctx, path, w.current);
-    });
+    // Shrink slightly to expose terminals at edges
+    pathFinder.markRect(comp.x, comp.y, w - 10, h - 10, 1);
+  });
+
+  // 2. Draw Wires with Routing
+  wires.forEach((w) => {
+    const p1 = w.from.comp.getTerminalPos(w.from.terminalId);
+    const p2 = w.to.comp.getTerminalPos(w.to.terminalId);
+
+    // Find Path
+    const path = pathFinder.simplifyPath(pathFinder.findPath(p1, p2));
+    w.path = path; // Cache for hit testing
+
+    // Mark path as HIGH_COST (2) for subsequent wires
+    // We only mark the segments.
+    for (let i = 0; i < path.length - 1; i++) {
+      // Mark a line... simplified: just mark the approximate cells
+      // This is an optimization; skipping complex line rasterization for now.
+      // Just marking the waypoints might be enough to discourage exact overlap if nodes align.
+      pathFinder.markRect(path[i].x, path[i].y, 10, 10, 2);
+    }
+
+    drawPath(ctx, path, w.current);
+  });
 
   // 3. Drawing feedback for wire creation (Active Drag)
   if (isDrawingWire && wireStartTerminal) {
     const p1 = wireStartTerminal;
-    const p2 = {x: lastMouseX, y: lastMouseY};
+    const p2 = { x: lastMouseX, y: lastMouseY };
     // Don't use full A* for ghost to save perf, or use it for consistency?
     // Use it for consistency so user sees where it will go.
     const path = pathFinder.simplifyPath(pathFinder.findPath(p1, p2));
@@ -2008,7 +2045,7 @@ function draw() {
   // 4. Draw Selected Terminal Ghost Wire
   if (selectedTerminal) {
     const p1 = selectedTerminal.comp.getTerminalPos(selectedTerminal.terminalId);
-    const p2 = {x: lastMouseX, y: lastMouseY};
+    const p2 = { x: lastMouseX, y: lastMouseY };
     const path = pathFinder.simplifyPath(pathFinder.findPath(p1, p2));
     drawPath(ctx, path, 0, true);
 
@@ -2030,68 +2067,68 @@ const contextMenu = document.getElementById("context-menu");
  * Draws a multi-segment path with rounded corners.
  */
 function drawPath(ctx, points, current = 0, isGhost = false) {
-    if (points.length < 2) return;
+  if (points.length < 2) return;
 
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, points[0].y);
 
-    const radius = 10; 
+  const radius = 10;
 
-    for (let i = 1; i < points.length - 1; i++) {
-        const p0 = points[i - 1];
-        const p1 = points[i];
-        const p2 = points[i + 1];
-        
-        // We draw a line from p0 towards p1, but stop before p1 to round the corner
-        // Actually since we iterate, we just need to draw FROM current point TO near the corner then curve
-        
-        // This is tricky with simple lineTo iteration.
-        // Better: `arcTo` is perfect for this.
-        // ctx.arcTo(x1, y1, x2, y2, radius)
-        // usage: from current pen position, draw line to (x1,y1) then curve towards (x2,y2)
-        
-        ctx.arcTo(p1.x, p1.y, p2.x, p2.y, radius);
-    }
-    
-    // Last segment
-    ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+  for (let i = 1; i < points.length - 1; i++) {
+    const p0 = points[i - 1];
+    const p1 = points[i];
+    const p2 = points[i + 1];
 
-    // Style Setup
-    if (isGhost) {
-        ctx.strokeStyle = "#e67e22";
-        ctx.lineWidth = 3;
-        ctx.setLineDash([5, 5]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        return;
-    }
+    // We draw a line from p0 towards p1, but stop before p1 to round the corner
+    // Actually since we iterate, we just need to draw FROM current point TO near the corner then curve
 
-    // Normal Wire Style
-    ctx.strokeStyle = "#2c3e50"; // Dark core
-    ctx.lineWidth = 4;
+    // This is tricky with simple lineTo iteration.
+    // Better: `arcTo` is perfect for this.
+    // ctx.arcTo(x1, y1, x2, y2, radius)
+    // usage: from current pen position, draw line to (x1,y1) then curve towards (x2,y2)
+
+    ctx.arcTo(p1.x, p1.y, p2.x, p2.y, radius);
+  }
+
+  // Last segment
+  ctx.lineTo(points[points.length - 1].x, points[points.length - 1].y);
+
+  // Style Setup
+  if (isGhost) {
+    ctx.strokeStyle = "#e67e22";
+    ctx.lineWidth = 3;
+    ctx.setLineDash([5, 5]);
+    ctx.stroke();
     ctx.setLineDash([]);
-    ctx.stroke();
+    return;
+  }
 
-    ctx.strokeStyle = "#3498db"; // Blue coat
+  // Normal Wire Style
+  ctx.strokeStyle = "#2c3e50"; // Dark core
+  ctx.lineWidth = 4;
+  ctx.setLineDash([]);
+  ctx.stroke();
+
+  ctx.strokeStyle = "#3498db"; // Blue coat
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Current Animation
+  if (Math.abs(current) > 0.001) {
+    ctx.stroke(); // Redraw path for overlay
+
+    ctx.strokeStyle = "#f1c40f"; // Electricity color
     ctx.lineWidth = 2;
+    ctx.setLineDash([8, 8]);
+
+    const speed = Math.min(Math.abs(current) * 5, 5);
+    let dashOffset = current > 0 ? animationOffset * speed : -animationOffset * speed;
+
+    ctx.lineDashOffset = dashOffset;
     ctx.stroke();
-
-    // Current Animation
-    if (Math.abs(current) > 0.001) {
-        ctx.stroke(); // Redraw path for overlay
-        
-        ctx.strokeStyle = "#f1c40f"; // Electricity color
-        ctx.lineWidth = 2;
-        ctx.setLineDash([8, 8]);
-
-        const speed = Math.min(Math.abs(current) * 5, 5);
-        let dashOffset = current > 0 ? animationOffset * speed : -animationOffset * speed;
-
-        ctx.lineDashOffset = dashOffset;
-        ctx.stroke();
-        ctx.setLineDash([]); // Reset
-        ctx.lineDashOffset = 0;
-    }
+    ctx.setLineDash([]); // Reset
+    ctx.lineDashOffset = 0;
+  }
 }
 
 // Global mouse tracker for animation loop usage if needed,
@@ -2137,21 +2174,21 @@ canvas.addEventListener("touchstart", (e) => {
   const pos = getTouchPos(e);
   touchStartPosition = { x: pos.x, y: pos.y };
   isLongPressMode = false; // Reset
-  
+
   // 1. Start Long Press Timer directly
   clearTimeout(longPressTimer);
   longPressTimer = setTimeout(() => {
-      // Long Press Triggered!
-      isLongPressMode = true;
-      canvas.dispatchEvent(
-        new MouseEvent("contextmenu", {
-          clientX: pos.x + canvas.getBoundingClientRect().left,
-          clientY: pos.y + canvas.getBoundingClientRect().top,
-          bubbles: true,
-          cancelable: true,
-          button: 2 // Right button
-        })
-      );
+    // Long Press Triggered!
+    isLongPressMode = true;
+    canvas.dispatchEvent(
+      new MouseEvent("contextmenu", {
+        clientX: pos.x + canvas.getBoundingClientRect().left,
+        clientY: pos.y + canvas.getBoundingClientRect().top,
+        bubbles: true,
+        cancelable: true,
+        button: 2 // Right button
+      })
+    );
   }, 500); // 500ms for long press
 
   // Standard click emulation
@@ -2169,11 +2206,11 @@ canvas.addEventListener("touchstart", (e) => {
 canvas.addEventListener("touchmove", (e) => {
   e.preventDefault(); // Prevent scrolling/zooming
   const pos = getTouchPos(e);
-  
+
   // Create a move threshold to cancel long press
   const moveDist = Math.hypot(pos.x - touchStartPosition.x, pos.y - touchStartPosition.y);
   if (moveDist > 10) {
-      clearTimeout(longPressTimer);
+    clearTimeout(longPressTimer);
   }
 
   canvas.dispatchEvent(
@@ -2188,7 +2225,7 @@ canvas.addEventListener("touchmove", (e) => {
 
 canvas.addEventListener("touchend", (e) => {
   e.preventDefault(); // Prevent scrolling/zooming
-  
+
   clearTimeout(longPressTimer); // Cancel long press on release
 
   // For touchend, e.touches might be empty, so use changedTouches
@@ -2210,7 +2247,7 @@ canvas.addEventListener("touchend", (e) => {
 canvas.addEventListener("touchcancel", (e) => {
   e.preventDefault();
   clearTimeout(longPressTimer);
-  
+
   // Treat touchcancel like touchend
   const pos = e.changedTouches[0]
     ? getTouchPos({ touches: [e.changedTouches[0]] })
@@ -2248,18 +2285,18 @@ const menuDelete = document.getElementById("menu-delete");
 // Delete Action
 // Delete Action
 menuDelete.addEventListener("click", () => {
-    if (contextMenuTarget) {
-        // Check if it's a wire (has 'from' property) or Component
-        if (contextMenuTarget.from) {
-             wires = wires.filter(w => w !== contextMenuTarget);
-             runSimulation();
-             updateEducationalFeedback();
-        } else {
-             removeComponent(contextMenuTarget);
-        }
-        contextMenu.classList.add("hidden");
-        contextMenuTarget = null;
+  if (contextMenuTarget) {
+    // Check if it's a wire (has 'from' property) or Component
+    if (contextMenuTarget.from) {
+      wires = wires.filter(w => w !== contextMenuTarget);
+      runSimulation();
+      updateEducationalFeedback();
+    } else {
+      removeComponent(contextMenuTarget);
     }
+    contextMenu.classList.add("hidden");
+    contextMenuTarget = null;
+  }
 });
 
 canvas.addEventListener("contextmenu", (e) => {
@@ -2277,14 +2314,14 @@ canvas.addEventListener("contextmenu", (e) => {
 
   // 2. If no component, Check Wires
   if (!target) {
-      for (let i = wires.length - 1; i >= 0; i--) {
-        if (isMouseOverWire(wires[i], pos.x, pos.y)) {
-            target = wires[i];
-            break;
-        }
+    for (let i = wires.length - 1; i >= 0; i--) {
+      if (isMouseOverWire(wires[i], pos.x, pos.y)) {
+        target = wires[i];
+        break;
       }
+    }
   }
-  
+
   contextMenuTarget = target; // Store reference
 
   if (target) {
@@ -2296,80 +2333,80 @@ canvas.addEventListener("contextmenu", (e) => {
     menuV.classList.remove("hidden");
     menuI.classList.remove("hidden");
     menuRPM.classList.add("hidden"); // specific
-    
+
     // Check type
     if (target.from) {
-        // --- WIRE ---
-        menuR.classList.add("hidden");
-        menuV.classList.add("hidden");
-        
-        let iMa = Math.abs(target.current * 1000);
-        menuI.textContent = `電流: ${iMa.toFixed(2)} mA`;
-        
+      // --- WIRE ---
+      menuR.classList.add("hidden");
+      menuV.classList.add("hidden");
+
+      let iMa = Math.abs(target.current * 1000);
+      menuI.textContent = `電流: ${iMa.toFixed(2)} mA`;
+
     } else {
-        // --- COMPONENT ---
-        
-        // 1. Resistance
-        let rText = "";
-        let rVal = target.resistance;
+      // --- COMPONENT ---
 
-        // Special case for dynamic switch
-        if (target.type === "switch") {
-          rVal = target.isSwitchOpen ? SWITCH_OPEN_RESISTANCE : SWITCH_RESISTANCE;
-        }
+      // 1. Resistance
+      let rText = "";
+      let rVal = target.resistance;
 
-        if (rVal >= 1e8) {
-          rText = "無限大 (∞)";
-        } else {
-          // Round to 2 decimals
-          rText = (Math.floor(rVal * 100) / 100).toFixed(2) + " Ω";
-        }
-        menuR.textContent = `電阻: ${rText}`;
+      // Special case for dynamic switch
+      if (target.type === "switch") {
+        rVal = target.isSwitchOpen ? SWITCH_OPEN_RESISTANCE : SWITCH_RESISTANCE;
+      }
 
-        // 2. Voltage
-        const v = Math.abs(target.voltageDrop);
-        menuV.textContent = `跨壓: ${v.toFixed(2)} V`;
+      if (rVal >= 1e8) {
+        rText = "無限大 (∞)";
+      } else {
+        // Round to 2 decimals
+        rText = (Math.floor(rVal * 100) / 100).toFixed(2) + " Ω";
+      }
+      menuR.textContent = `電阻: ${rText}`;
 
-        // 3. Current (mA)
-        let iVal = 0;
-        if (target.type === "battery") {
-            const vTerm = Math.abs(target.voltageDrop);
-            iVal = Math.abs((BATTERY_VOLTAGE - vTerm) / BATTERY_RESISTANCE);
-        } else if (rVal < 1e8) {
-          iVal = v / rVal;
-        }
-        const iMa = iVal * 1000;
-        menuI.textContent = `電流: ${iMa.toFixed(2)} mA`;
+      // 2. Voltage
+      const v = Math.abs(target.voltageDrop);
+      menuV.textContent = `跨壓: ${v.toFixed(2)} V`;
 
-        // 4. Motor RPM
-        if (target.type === "motor") {
-          menuRPM.classList.remove("hidden");
-          const rpm = Math.round(v * 30); 
-          menuRPM.textContent = `轉速: ${rpm} rpm`;
-        }
+      // 3. Current (mA)
+      let iVal = 0;
+      if (target.type === "battery") {
+        const vTerm = Math.abs(target.voltageDrop);
+        iVal = Math.abs((BATTERY_VOLTAGE - vTerm) / BATTERY_RESISTANCE);
+      } else if (rVal < 1e8) {
+        iVal = v / rVal;
+      }
+      const iMa = iVal * 1000;
+      menuI.textContent = `電流: ${iMa.toFixed(2)} mA`;
+
+      // 4. Motor RPM
+      if (target.type === "motor") {
+        menuRPM.classList.remove("hidden");
+        const rpm = Math.round(v * 30);
+        menuRPM.textContent = `轉速: ${rpm} rpm`;
+      }
     }
 
     // Position Menu (Boundary Check)
     const menuRect = contextMenu.getBoundingClientRect();
     const workspace = canvas.parentElement; // workspace container
     const wsRect = workspace.getBoundingClientRect();
-    
+
     // pos is relative to canvas (which is same size as workspace roughly)
     // Actually context-menu is in .workspace, position absolute.
     // pos.x/y are correct relative coordinates.
-    
+
     let menuX = pos.x;
     let menuY = pos.y;
-    
+
     // Check Right Edge
     if (menuX + menuRect.width > wsRect.width) {
-        menuX = wsRect.width - menuRect.width - 5;
+      menuX = wsRect.width - menuRect.width - 5;
     }
     // Check Bottom Edge
     if (menuY + menuRect.height > wsRect.height) {
-        menuY = wsRect.height - menuRect.height - 5;
+      menuY = wsRect.height - menuRect.height - 5;
     }
-    
+
     contextMenu.style.left = menuX + "px";
     contextMenu.style.top = menuY + "px";
 
@@ -2419,129 +2456,129 @@ const resultsScreen = document.getElementById("results-screen");
 let currentGameMode = 'menu'; // 'menu', 'normal', 'challenge'
 
 function setupGameUI() {
-    // Instructions Modal
-    const instructionsScreen = document.getElementById("instructions-screen");
-    const openBtn = document.getElementById("btn-open-instructions");
-    const closeBtn = document.getElementById("btn-close-instructions");
+  // Instructions Modal
+  const instructionsScreen = document.getElementById("instructions-screen");
+  const openBtn = document.getElementById("btn-open-instructions");
+  const closeBtn = document.getElementById("btn-close-instructions");
 
-    if (openBtn) {
-        openBtn.addEventListener("click", () => {
-            instructionsScreen.classList.remove("hidden");
-        });
-    }
-    if (closeBtn) {
-        closeBtn.addEventListener("click", () => {
-            instructionsScreen.classList.add("hidden");
-        });
-    }
-    if (instructionsScreen) {
-        instructionsScreen.addEventListener("click", (e) => {
-            if (e.target === instructionsScreen) {
-                instructionsScreen.classList.add("hidden");
-            }
-        });
-    }
-
-    // Mode Selection Buttons
-    document.getElementById("btn-normal-mode").addEventListener("click", () => {
-        startNormalMode();
+  if (openBtn) {
+    openBtn.addEventListener("click", () => {
+      instructionsScreen.classList.remove("hidden");
     });
-
-    document.getElementById("btn-challenge-mode").addEventListener("click", () => {
-        const count = document.getElementById("challenge-count").value;
-        startChallengeMode(count);
+  }
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => {
+      instructionsScreen.classList.add("hidden");
     });
+  }
+  if (instructionsScreen) {
+    instructionsScreen.addEventListener("click", (e) => {
+      if (e.target === instructionsScreen) {
+        instructionsScreen.classList.add("hidden");
+      }
+    });
+  }
 
-    document.getElementById("btn-restart").addEventListener("click", () => {
+  // Mode Selection Buttons
+  document.getElementById("btn-normal-mode").addEventListener("click", () => {
+    startNormalMode();
+  });
+
+  document.getElementById("btn-challenge-mode").addEventListener("click", () => {
+    const count = document.getElementById("challenge-count").value;
+    startChallengeMode(count);
+  });
+
+  document.getElementById("btn-restart").addEventListener("click", () => {
+    showStartScreen();
+  });
+
+  // Sidebar Buttons Logic
+
+  // Clear Button (Shared)
+  document.getElementById("clear-btn").addEventListener("click", () => {
+    if (confirm("確定要清除所有元件嗎？")) {
+      clearComponents();
+    }
+  });
+
+  // Verify Button (Challenge Only)
+  document.getElementById("verify-btn").addEventListener("click", () => {
+    challengeManager.checkAnswer(components, wires);
+  });
+
+  // Home Button (Shared)
+  document.getElementById("home-btn").addEventListener("click", () => {
+    if (currentGameMode === 'challenge') {
+      if (confirm("確定要放棄挑戰並回到首頁嗎？")) {
         showStartScreen();
-    });
-
-    // Sidebar Buttons Logic
-    
-    // Clear Button (Shared)
-    document.getElementById("clear-btn").addEventListener("click", () => {
-        if(confirm("確定要清除所有元件嗎？")) {
-            clearComponents();
-        }
-    });
-
-    // Verify Button (Challenge Only)
-    document.getElementById("verify-btn").addEventListener("click", () => {
-        challengeManager.checkAnswer(components, wires);
-    });
-
-    // Home Button (Shared)
-    document.getElementById("home-btn").addEventListener("click", () => {
-        if (currentGameMode === 'challenge') {
-             if(confirm("確定要放棄挑戰並回到首頁嗎？")) {
-                showStartScreen();
-             }
-        } else {
-            showStartScreen();
-        }
-    });
-
-    // Sidebar Instructions Button
-    const sidebarInstructionsBtn = document.getElementById("sidebar-instructions-btn");
-    if (sidebarInstructionsBtn) {
-        sidebarInstructionsBtn.addEventListener("click", () => {
-            instructionsScreen.classList.remove("hidden");
-        });
+      }
+    } else {
+      showStartScreen();
     }
+  });
+
+  // Sidebar Instructions Button
+  const sidebarInstructionsBtn = document.getElementById("sidebar-instructions-btn");
+  if (sidebarInstructionsBtn) {
+    sidebarInstructionsBtn.addEventListener("click", () => {
+      instructionsScreen.classList.remove("hidden");
+    });
+  }
 }
 
 function showStartScreen() {
-    currentGameMode = 'menu';
-    startScreen.classList.remove("hidden");
-    challengeHUD.classList.add("hidden");
-    resultsScreen.classList.add("hidden");
-    clearComponents();
+  currentGameMode = 'menu';
+  startScreen.classList.remove("hidden");
+  challengeHUD.classList.add("hidden");
+  resultsScreen.classList.add("hidden");
+  clearComponents();
 }
 
 function startNormalMode() {
-    currentGameMode = 'normal';
-    startScreen.classList.add("hidden");
-    challengeHUD.classList.add("hidden");
-    resultsScreen.classList.add("hidden");
-    clearComponents();
-    setToolboxMode('normal');
+  currentGameMode = 'normal';
+  startScreen.classList.add("hidden");
+  challengeHUD.classList.add("hidden");
+  resultsScreen.classList.add("hidden");
+  clearComponents();
+  setToolboxMode('normal');
 }
 
 function startChallengeMode(count) {
-    currentGameMode = 'challenge';
-    startScreen.classList.add("hidden");
-    challengeHUD.classList.remove("hidden");
-    resultsScreen.classList.add("hidden");
-    clearComponents();
-    setToolboxMode('challenge');
-    challengeManager.start(count);
+  currentGameMode = 'challenge';
+  startScreen.classList.add("hidden");
+  challengeHUD.classList.remove("hidden");
+  resultsScreen.classList.add("hidden");
+  clearComponents();
+  setToolboxMode('challenge');
+  challengeManager.start(count);
 }
 
 function setToolboxMode(mode) {
-    const items = document.querySelectorAll(".component-item");
-    const verifyBtn = document.getElementById("verify-btn");
-    
-    // Manage Sidebar Buttons Visibility
-    if (mode === 'challenge') {
-        verifyBtn.classList.remove('hidden');
-    } else {
-        verifyBtn.classList.add('hidden');
-    }
+  const items = document.querySelectorAll(".component-item");
+  const verifyBtn = document.getElementById("verify-btn");
 
-    // Filter Components
-    items.forEach(item => {
-        const type = item.dataset.type;
-        if (mode === 'challenge') {
-            // Only allow Battery, Bulb, Motor
-            if (['battery', 'bulb', 'motor'].includes(type)) { 
-                 item.style.display = "flex";
-            } else {
-                 item.style.display = "none";
-            }
-        } else {
-            item.style.display = "flex";
-        }
-    });
+  // Manage Sidebar Buttons Visibility
+  if (mode === 'challenge') {
+    verifyBtn.classList.remove('hidden');
+  } else {
+    verifyBtn.classList.add('hidden');
+  }
+
+  // Filter Components
+  items.forEach(item => {
+    const type = item.dataset.type;
+    if (mode === 'challenge') {
+      // Only allow Battery, Bulb, Motor
+      if (['battery', 'bulb', 'motor'].includes(type)) {
+        item.style.display = "flex";
+      } else {
+        item.style.display = "none";
+      }
+    } else {
+      item.style.display = "flex";
+    }
+  });
 }
 
 // Initialize UI
