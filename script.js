@@ -1212,16 +1212,81 @@ toolboxItems.forEach((item) => {
     e.dataTransfer.setData("type", item.dataset.type);
   });
   
-  // Mobile Touch to Add
-  // Since we can't easily drag-drop from DOM to Canvas on mobile with native DnD API,
-  // we'll implement a simple "Tap to Add" or "Touch-Drag Ghost" (Simplified: Tap adds to center)
-  item.addEventListener("click", (e) => {
-      // Just add to center of workspace
-      // Random offset to avoid stacking
-      const rx = 100 + Math.random() * 50;
-      const ry = 100 + Math.random() * 50;
-      addComponent(item.dataset.type, rx, ry);
-  });
+  // Mobile Touch Logic (Tap to Add OR Drag to Drop)
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let ghostEl = null;
+  let isTouchDragging = false;
+
+  const onTouchMove = (e) => {
+      const touch = e.touches[0];
+      const moveX = touch.clientX;
+      const moveY = touch.clientY;
+      const dist = Math.hypot(moveX - touchStartX, moveY - touchStartY);
+
+      if (dist > 10 && !isTouchDragging) {
+          isTouchDragging = true;
+          // Create Ghost
+          ghostEl = item.cloneNode(true);
+          ghostEl.style.position = 'fixed';
+          ghostEl.style.left = moveX + 'px';
+          ghostEl.style.top = moveY + 'px';
+          ghostEl.style.opacity = '0.8';
+          ghostEl.style.pointerEvents = 'none'; // Passthrough
+          ghostEl.style.zIndex = '9999';
+          ghostEl.style.width = item.offsetWidth + 'px'; // Match size
+          document.body.appendChild(ghostEl);
+      }
+
+      if (isTouchDragging) {
+          e.preventDefault(); // Stop scrolling
+          if(ghostEl) {
+              ghostEl.style.left = (moveX - ghostEl.offsetWidth/2) + 'px';
+              ghostEl.style.top = (moveY - ghostEl.offsetHeight/2) + 'px';
+          }
+      }
+  };
+
+  const onTouchEnd = (e) => {
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+
+      if (isTouchDragging) {
+          // Drop Logic
+          if (ghostEl) {
+              // Check if dropped on canvas
+              const touch = e.changedTouches[0];
+              const cRect = canvas.getBoundingClientRect();
+              
+              if (touch.clientX >= cRect.left && touch.clientX <= cRect.right &&
+                  touch.clientY >= cRect.top && touch.clientY <= cRect.bottom) {
+                  
+                  // Calculate canvas pos
+                  const cx = touch.clientX - cRect.left;
+                  const cy = touch.clientY - cRect.top;
+                  addComponent(item.dataset.type, cx, cy);
+              }
+              
+              ghostEl.remove();
+              ghostEl = null;
+          }
+      } else {
+          // Tap (Click) Logic - Add to Center
+          const rx = 100 + Math.random() * 50;
+          const ry = 100 + Math.random() * 50;
+          addComponent(item.dataset.type, rx, ry);
+      }
+      isTouchDragging = false;
+  };
+
+  item.addEventListener("touchstart", (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      isTouchDragging = false;
+      
+      document.addEventListener('touchmove', onTouchMove, { passive: false });
+      document.addEventListener('touchend', onTouchEnd);
+  }, { passive: false });
 });
 
 
@@ -1551,6 +1616,8 @@ function isPointOnLine(px, py, x1, y1, x2, y2, tolerance) {
 }
 
 function addComponent(type, x, y) {
+  if (!type) return; // Prevent malformed components
+
   // Snap initial pos
   x = Math.round(x / GRID_SIZE) * GRID_SIZE;
   y = Math.round(y / GRID_SIZE) * GRID_SIZE;
@@ -2072,18 +2139,40 @@ function getTouchPos(e) {
 }
 
 // Touch event listeners mapping to mouse events
+// Double tap detection state
+let lastTouchTime = 0;
 canvas.addEventListener("touchstart", (e) => {
   e.preventDefault(); // Prevent scrolling/zooming
   const pos = getTouchPos(e);
-  canvas.dispatchEvent(
-    new MouseEvent("mousedown", {
-      clientX: pos.x + canvas.getBoundingClientRect().left,
-      clientY: pos.y + canvas.getBoundingClientRect().top,
-      button: 0, // Left click
-      bubbles: true,
-      cancelable: true,
-    })
-  );
+  
+  // Double Tap Detection
+  const currentTime = new Date().getTime();
+  const tapLength = currentTime - lastTouchTime;
+  if (tapLength < 300 && tapLength > 0) {
+      // Double Tap Detected!
+       canvas.dispatchEvent(
+        new MouseEvent("dblclick", {
+          clientX: pos.x + canvas.getBoundingClientRect().left,
+          clientY: pos.y + canvas.getBoundingClientRect().top,
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+      lastTouchTime = 0; // Reset
+  } else {
+      lastTouchTime = currentTime;
+      
+      // Standard click emulation
+      canvas.dispatchEvent(
+        new MouseEvent("mousedown", {
+          clientX: pos.x + canvas.getBoundingClientRect().left,
+          clientY: pos.y + canvas.getBoundingClientRect().top,
+          button: 0, // Left click
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+  }
 });
 
 canvas.addEventListener("touchmove", (e) => {
