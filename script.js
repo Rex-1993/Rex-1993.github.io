@@ -1644,6 +1644,18 @@ function addComponent(type, x, y) {
 function removeComponent(comp) {
   components = components.filter((c) => c !== comp);
   wires = wires.filter((w) => w.from.comp !== comp && w.to.comp !== comp);
+
+  // Check if we are drawing a wire from this component (half-connected dashed line)
+  if (isDrawingWire && wireStartTerminal && wireStartTerminal.comp === comp) {
+      isDrawingWire = false;
+      wireStartTerminal = null;
+  }
+
+  // Check if we have selected a terminal on this component (for click-click connection)
+  if (selectedTerminal && selectedTerminal.comp === comp) {
+    selectedTerminal = null;
+  }
+
   runSimulation();
   updateEducationalFeedback();
 }
