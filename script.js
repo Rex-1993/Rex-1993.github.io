@@ -2419,6 +2419,29 @@ const resultsScreen = document.getElementById("results-screen");
 let currentGameMode = 'menu'; // 'menu', 'normal', 'challenge'
 
 function setupGameUI() {
+    // Instructions Modal
+    const instructionsScreen = document.getElementById("instructions-screen");
+    const openBtn = document.getElementById("btn-open-instructions");
+    const closeBtn = document.getElementById("btn-close-instructions");
+
+    if (openBtn) {
+        openBtn.addEventListener("click", () => {
+            instructionsScreen.classList.remove("hidden");
+        });
+    }
+    if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+            instructionsScreen.classList.add("hidden");
+        });
+    }
+    if (instructionsScreen) {
+        instructionsScreen.addEventListener("click", (e) => {
+            if (e.target === instructionsScreen) {
+                instructionsScreen.classList.add("hidden");
+            }
+        });
+    }
+
     // Mode Selection Buttons
     document.getElementById("btn-normal-mode").addEventListener("click", () => {
         startNormalMode();
@@ -2457,6 +2480,14 @@ function setupGameUI() {
             showStartScreen();
         }
     });
+
+    // Sidebar Instructions Button
+    const sidebarInstructionsBtn = document.getElementById("sidebar-instructions-btn");
+    if (sidebarInstructionsBtn) {
+        sidebarInstructionsBtn.addEventListener("click", () => {
+            instructionsScreen.classList.remove("hidden");
+        });
+    }
 }
 
 function showStartScreen() {

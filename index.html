@@ -40,6 +40,9 @@
                 </select>
               </div>
             </div>
+            <button id="btn-open-instructions" class="btn-info-large">
+              操作說明
+            </button>
           </div>
         </div>
       </div>
@@ -57,22 +60,48 @@
         <!-- Buttons moved to sidebar -->
       </div>
 
-      <!-- Results Screen (Hidden by default) -->
       <div id="results-screen" class="overlay hidden">
         <div class="panel results-panel">
           <h2>挑戰完成！</h2>
           <div class="final-score">
             總分: <span id="final-score-val">0</span>
           </div>
-          
+
           <!-- Weakness Analysis -->
           <div id="weakness-report" class="weakness-container hidden">
-              <h3>📊 弱點分析</h3>
-              <div id="weakness-list"></div>
+            <h3>📊 弱點分析</h3>
+            <div id="weakness-list"></div>
           </div>
 
           <div id="mistakes-list" class="mistakes-container"></div>
           <button id="btn-restart" class="btn-primary">回到主選單</button>
+        </div>
+      </div>
+
+      <!-- Instructions Modal (Hidden by default) -->
+      <div id="instructions-screen" class="overlay hidden">
+        <div class="panel instructions-panel">
+          <h2>📖 操作說明</h2>
+          <div class="instructions-content">
+            <h3>基本操作</h3>
+            <ul>
+              <li><strong>拖曳元件：</strong>從元件箱將電池、燈泡等元件拖曳到工作區。</li>
+              <li><strong>連接電線：</strong>點擊元件的一個接點，然後點擊另一個元件的接點來連接電線。</li>
+              <li><strong>旋轉元件：</strong>點擊畫布上的元件可以旋轉它（順時針轉 90 度）。</li>
+              <li><strong>刪除元件或電線：</strong>對著元件或電線按右鍵（或觸控長按）選擇刪除元件。</li>
+              <li><strong>右鍵選單：</strong>可以檢視元件詳細資訊。</li>
+            </ul>
+
+            <h3>注意事項</h3>
+            <ul>
+              <li>
+                ⚠️
+                <strong>短路警告：</strong
+                >如果電池的正負極直接相連而沒有經過負載（如燈泡），會造成短路！
+              </li>
+            </ul>
+          </div>
+          <button id="btn-close-instructions" class="btn-primary">關閉</button>
         </div>
       </div>
       <header>
@@ -235,16 +264,7 @@
             <button id="verify-btn" class="btn success hidden">驗證答案</button>
             <button id="clear-btn" class="btn danger">清除全部</button>
             <button id="home-btn" class="btn home">回到首頁</button>
-          </div>
-
-          <div class="instructions">
-            <h3>如何使用：</h3>
-            <ol>
-              <li>從元件箱把元件拖曳到右邊的畫布上。</li>
-              <li>點擊元件兩端的接點來連接電線。</li>
-              <li>按一下可以旋轉元件。</li>
-              <li>右鍵或長按選單可刪除元件。</li>
-            </ol>
+            <button id="sidebar-instructions-btn" class="btn info">操作說明</button>
           </div>
         </div>
 
@@ -261,7 +281,18 @@
             <div class="menu-item" id="menu-voltage">跨壓: --</div>
             <div class="menu-item" id="menu-current">電流: --</div>
             <div class="menu-item hidden" id="menu-rpm">轉速: --</div>
-            <div class="menu-item" id="menu-delete" style="color: #e74c3c; cursor: pointer; font-weight: bold; border-top: 1px solid #eee;">🗑️ 刪除元件</div>
+            <div
+              class="menu-item"
+              id="menu-delete"
+              style="
+                color: #e74c3c;
+                cursor: pointer;
+                font-weight: bold;
+                border-top: 1px solid #eee;
+              "
+            >
+              🗑️ 刪除元件
+            </div>
           </div>
         </div>
       </main>
