@@ -595,7 +595,7 @@ main {
   justify-content: center;
   gap: 10px;
   font-size: 1.2rem;
-  color: #bdc3c7;
+  color: black;
 }
 
 .difficulty-select select {
