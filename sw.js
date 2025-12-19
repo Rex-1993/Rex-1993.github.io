@@ -1,26 +1,48 @@
-const CACHE_NAME = "circuit-lab-v2";
-const ASSETS = [
+const CACHE_NAME = "circuit-scientist-v1";
+const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
   "./style.css",
   "./script.js",
   "./icon.svg",
   "./manifest.json",
-  "./icon-192.png",
-  "./icon-512.png",
 ];
 
-self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
+// Install Event
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => {
+      console.log("Opened cache");
+      return cache.addAll(ASSETS_TO_CACHE);
+    })
+  );
 });
 
-self.addEventListener('fetch', (e) => {
-  e.respondWith(
-    caches.match(e.request).then((response) => {
-        return response || fetch(e.request).catch(err => {
-            console.error('Fetch failed:', e.request.url, err);
-            // Optional: return a fallback offline page here if navigation
-        });
+// Fetch Event
+self.addEventListener("fetch", (event) => {
+  event.respondWith(
+    caches.match(event.request).then((response) => {
+      // Cache hit - return response
+      if (response) {
+        return response;
+      }
+      return fetch(event.request);
+    })
+  );
+});
+
+// Activate Event (Clean up old caches)
+self.addEventListener("activate", (event) => {
+  const cacheWhitelist = [CACHE_NAME];
+  event.waitUntil(
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => {
+          if (cacheWhitelist.indexOf(cacheName) === -1) {
+            return caches.delete(cacheName);
+          }
+        })
+      );
     })
   );
 });
