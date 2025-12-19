@@ -2038,36 +2038,11 @@ function draw() {
     ctx.stroke();
   }
 
-  // Draw Voltage Tooltip
-  if (hoveredComponent) {
-    const v = Math.abs(hoveredComponent.voltageDrop).toFixed(2);
-    const text = `電壓: ${v}V`;
-
-    ctx.font = "bold 14px 'Noto Sans TC', sans-serif";
-    const tm = ctx.measureText(text);
-    const padding = 8;
-    const tw = tm.width;
-    const th = 14;
-
-    const tx = lastMouseX + 15;
-    const ty = lastMouseY + 15;
-
-    // Box
-    ctx.fillStyle = "rgba(0, 0, 0, 0.8)";
-    ctx.beginPath();
-    if (ctx.roundRect) {
-      ctx.roundRect(tx, ty, tw + padding * 2, th + padding * 2, 6);
-    } else {
-      ctx.rect(tx, ty, tw + padding * 2, th + padding * 2);
-    }
-    ctx.fill();
-
-    // Text
-    ctx.fillStyle = "white";
-    ctx.textBaseline = "top";
-    ctx.fillText(text, tx + padding, ty + padding);
-  }
+  // Voltage Tooltip Removed
 }
+
+let contextMenuTarget = null;
+const contextMenu = document.getElementById("context-menu");
 
 /**
  * Draws a multi-segment path with rounded corners.
@@ -2301,11 +2276,21 @@ requestAnimationFrame(animate);
 // ---------------------------------------------------------
 // Context Menu Logic
 // ---------------------------------------------------------
-const contextMenu = document.getElementById("context-menu");
+// contextMenu is already declared above
 const menuR = document.getElementById("menu-resistance");
 const menuV = document.getElementById("menu-voltage");
 const menuI = document.getElementById("menu-current");
 const menuRPM = document.getElementById("menu-rpm");
+const menuDelete = document.getElementById("menu-delete");
+
+// Delete Action
+menuDelete.addEventListener("click", () => {
+    if (contextMenuTarget) {
+        removeComponent(contextMenuTarget);
+        contextMenu.classList.add("hidden");
+        contextMenuTarget = null;
+    }
+});
 
 canvas.addEventListener("contextmenu", (e) => {
   e.preventDefault();
@@ -2320,6 +2305,8 @@ canvas.addEventListener("contextmenu", (e) => {
       break;
     }
   }
+  
+  contextMenuTarget = target; // Store reference
 
   if (target) {
     // Show Menu
