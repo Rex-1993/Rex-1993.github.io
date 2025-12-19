@@ -1215,6 +1215,8 @@ toolboxItems.forEach((item) => {
   // Mobile Touch Logic (Tap to Add OR Drag to Drop)
   let touchStartX = 0;
   let touchStartY = 0;
+  let lastMoveX = 0;
+  let lastMoveY = 0;
   let ghostEl = null;
   let isTouchDragging = false;
 
@@ -1222,6 +1224,9 @@ toolboxItems.forEach((item) => {
       const touch = e.touches[0];
       const moveX = touch.clientX;
       const moveY = touch.clientY;
+      lastMoveX = moveX;
+      lastMoveY = moveY;
+      
       const dist = Math.hypot(moveX - touchStartX, moveY - touchStartY);
 
       if (dist > 10 && !isTouchDragging) {
@@ -1255,26 +1260,35 @@ toolboxItems.forEach((item) => {
           // Drop Logic
           if (ghostEl) {
               // Check if dropped on canvas
+              // Use lastMoveX/Y fallback if changedTouches is weird, though changedTouches usually works
               const touch = e.changedTouches[0];
+              const clientX = touch ? touch.clientX : lastMoveX;
+              const clientY = touch ? touch.clientY : lastMoveY;
+
               const cRect = canvas.getBoundingClientRect();
               
-              if (touch.clientX >= cRect.left && touch.clientX <= cRect.right &&
-                  touch.clientY >= cRect.top && touch.clientY <= cRect.bottom) {
+              if (clientX >= cRect.left && clientX <= cRect.right &&
+                  clientY >= cRect.top && clientY <= cRect.bottom) {
                   
                   // Calculate canvas pos
-                  const cx = touch.clientX - cRect.left;
-                  const cy = touch.clientY - cRect.top;
-                  addComponent(item.dataset.type, cx, cy);
+                  const cx = clientX - cRect.left;
+                  const cy = clientY - cRect.top;
+                  
+                  // Execute Add (Ensure numbers)
+                  if (!isNaN(cx) && !isNaN(cy)) {
+                      addComponent(item.dataset.type, cx, cy);
+                      
+                      // Force extra redraw next tick to ensure visibility
+                      setTimeout(() => {
+                          runSimulation();
+                          draw();
+                      }, 10);
+                  }
               }
               
               ghostEl.remove();
               ghostEl = null;
           }
-      } else {
-          // Tap (Click) Logic - Add to Center
-          const rx = 100 + Math.random() * 50;
-          const ry = 100 + Math.random() * 50;
-          addComponent(item.dataset.type, rx, ry);
       }
       isTouchDragging = false;
   };
@@ -1282,11 +1296,21 @@ toolboxItems.forEach((item) => {
   item.addEventListener("touchstart", (e) => {
       touchStartX = e.touches[0].clientX;
       touchStartY = e.touches[0].clientY;
+      lastMoveX = touchStartX;
+      lastMoveY = touchStartY;
       isTouchDragging = false;
       
       document.addEventListener('touchmove', onTouchMove, { passive: false });
       document.addEventListener('touchend', onTouchEnd);
   }, { passive: false });
+
+  // Click Handler (Mouse & Tap)
+  item.addEventListener("click", (e) => {
+      // Just add to center of workspace
+      const rx = 100 + Math.random() * 50;
+      const ry = 100 + Math.random() * 50;
+      addComponent(item.dataset.type, rx, ry);
+  });
 });
 
 
@@ -1400,6 +1424,12 @@ canvas.addEventListener("mouseup", (e) => {
       pos.y - dragStartPosition.y
     );
     if (dist < 5 && draggedComponent && e.button === 0) {
+      // Prevent rotation if this was a long press context menu
+      if (isLongPressMode) return;
+      
+      // Prevent rotation if this is part of a double click (click 2)
+      if (e.detail > 1) return;
+
       // Only Left Click
       if (draggedComponent.type === "switch") {
         // Precise Hit Test for Toggle vs Rotate
@@ -2139,17 +2169,25 @@ function getTouchPos(e) {
 }
 
 // Touch event listeners mapping to mouse events
-// Double tap detection state
+// Double tap and Long press detection state
 let lastTouchTime = 0;
+let longPressTimer = null;
+let touchStartPosition = { x: 0, y: 0 };
+let isLongPressMode = false;
+
 canvas.addEventListener("touchstart", (e) => {
   e.preventDefault(); // Prevent scrolling/zooming
   const pos = getTouchPos(e);
+  touchStartPosition = { x: pos.x, y: pos.y };
+  isLongPressMode = false; // Reset
   
-  // Double Tap Detection
+  // 1. Double Tap Detection
   const currentTime = new Date().getTime();
   const tapLength = currentTime - lastTouchTime;
+  
   if (tapLength < 300 && tapLength > 0) {
       // Double Tap Detected!
+       clearTimeout(longPressTimer); // Cancel any pending long press
        canvas.dispatchEvent(
         new MouseEvent("dblclick", {
           clientX: pos.x + canvas.getBoundingClientRect().left,
@@ -2162,6 +2200,22 @@ canvas.addEventListener("touchstart", (e) => {
   } else {
       lastTouchTime = currentTime;
       
+      // 2. Start Long Press Timer
+      clearTimeout(longPressTimer);
+      longPressTimer = setTimeout(() => {
+          // Long Press Triggered!
+          isLongPressMode = true;
+          canvas.dispatchEvent(
+            new MouseEvent("contextmenu", {
+              clientX: pos.x + canvas.getBoundingClientRect().left,
+              clientY: pos.y + canvas.getBoundingClientRect().top,
+              bubbles: true,
+              cancelable: true,
+              button: 2 // Right button
+            })
+          );
+      }, 500); // 500ms for long press
+
       // Standard click emulation
       canvas.dispatchEvent(
         new MouseEvent("mousedown", {
@@ -2178,6 +2232,13 @@ canvas.addEventListener("touchstart", (e) => {
 canvas.addEventListener("touchmove", (e) => {
   e.preventDefault(); // Prevent scrolling/zooming
   const pos = getTouchPos(e);
+  
+  // Create a move threshold to cancel long press
+  const moveDist = Math.hypot(pos.x - touchStartPosition.x, pos.y - touchStartPosition.y);
+  if (moveDist > 10) {
+      clearTimeout(longPressTimer);
+  }
+
   canvas.dispatchEvent(
     new MouseEvent("mousemove", {
       clientX: pos.x + canvas.getBoundingClientRect().left,
@@ -2190,6 +2251,9 @@ canvas.addEventListener("touchmove", (e) => {
 
 canvas.addEventListener("touchend", (e) => {
   e.preventDefault(); // Prevent scrolling/zooming
+  
+  clearTimeout(longPressTimer); // Cancel long press on release
+
   // For touchend, e.touches might be empty, so use changedTouches
   const pos = e.changedTouches[0]
     ? getTouchPos({ touches: [e.changedTouches[0]] })
@@ -2208,6 +2272,8 @@ canvas.addEventListener("touchend", (e) => {
 
 canvas.addEventListener("touchcancel", (e) => {
   e.preventDefault();
+  clearTimeout(longPressTimer);
+  
   // Treat touchcancel like touchend
   const pos = e.changedTouches[0]
     ? getTouchPos({ touches: [e.changedTouches[0]] })
