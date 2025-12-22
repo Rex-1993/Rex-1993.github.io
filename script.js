@@ -2730,6 +2730,9 @@ function initToolboxTouch() {
     item.addEventListener("touchend", (e) => {
       if (!ghost) return;
 
+      // Prevent mouse event emulation (click) which might cause double add
+      e.preventDefault();
+
       // Check drop target
       // We need coordinates. changedTouches has the info.
       const touch = e.changedTouches[0];

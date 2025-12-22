@@ -86,6 +86,25 @@ main {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Custom Scrollbar for Touch Visibility */
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.4);
+}
+
 .sidebar h2 {
   margin-bottom: 20px;
   color: #444;
