@@ -51,19 +51,23 @@
 
       <div id="results-screen" class="overlay hidden">
         <div class="panel results-panel">
-          <h2>挑戰完成！</h2>
-          <div class="final-score">
-            總分: <span id="final-score-val">0</span>
+          <div class="results-summary">
+            <h2>挑戰完成！</h2>
+            <div class="final-score">
+              總分: <span id="final-score-val">0</span>
+            </div>
+            <button id="btn-restart" class="btn-primary">回到主選單</button>
           </div>
 
-          <!-- Weakness Analysis -->
-          <div id="weakness-report" class="weakness-container hidden">
-            <h3>📊 弱點分析</h3>
-            <div id="weakness-list"></div>
-          </div>
+          <div class="results-details">
+            <!-- Weakness Analysis -->
+            <div id="weakness-report" class="weakness-container hidden">
+              <h3>📊 弱點分析</h3>
+              <div id="weakness-list"></div>
+            </div>
 
-          <div id="mistakes-list" class="mistakes-container"></div>
-          <button id="btn-restart" class="btn-primary">回到主選單</button>
+            <div id="mistakes-list" class="mistakes-container"></div>
+          </div>
         </div>
       </div>
 

@@ -487,6 +487,47 @@ main {
   .workspace-container {
     height: 100%;
   }
+
+  /* Optimized Results Panel for Landscape Mobile */
+  .results-panel {
+    flex-direction: row; /* Side by Side */
+    max-width: 750px;
+    height: 90vh;
+    padding: 1.5rem;
+    gap: 20px;
+    overflow: hidden; /* Prevent body scroll */
+  }
+
+  .results-summary {
+    width: 40%;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .results-details {
+    width: 60%;
+    height: 100%;
+    overflow-y: auto; /* Scrollable Details */
+    justify-content: flex-start;
+    padding-right: 5px;
+  }
+
+  .results-summary h2 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+  }
+
+  .results-summary .final-score {
+    font-size: 2rem;
+    margin: 10px 0;
+  }
+
+  .results-summary #btn-restart {
+    width: auto;
+    padding: 10px 20px;
+    font-size: 1rem;
+    margin-top: 10px;
+  }
 }
 
 /* ========================================= */
@@ -773,7 +814,21 @@ main {
   transform: scale(1.05);
 }
 
+
 /* Results Screen */
+.results-panel {
+  width: 95%; /* Use more width on small screens */
+  max-width: 500px;
+  gap: 20px;
+}
+
+.results-summary, .results-details {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .results-panel h2 {
   font-size: 2.5rem;
   color: #27ae60;
