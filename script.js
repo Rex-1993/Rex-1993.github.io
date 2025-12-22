@@ -893,16 +893,22 @@ class ChallengeManager {
 
     if (isCorrect) {
       this.score++;
-      alert("答對了！");
+      showModal("挑戰結果", "🎉 答對了！", "info").then(() => {
+        this.nextQuestion();
+      });
     } else {
-      alert(`答錯了！\n原因: ${failReason}`);
       this.mistakes.push({ q: q.text, reason: failReason });
       // Record Failure for analysis
       if (this.stats[q.type]) {
         this.stats[q.type].fails++;
       }
+      showModal("挑戰結果", `❌ 答錯了！<br><span style="color:#e74c3c; font-size:0.9em">${failReason}</span>`, "info").then(() => {
+        this.nextQuestion();
+      });
     }
+  }
 
+  nextQuestion() {
     this.currentIndex++;
     if (this.currentIndex >= this.totalQuestions) {
       this.endGame();
@@ -914,7 +920,9 @@ class ChallengeManager {
 
   endGame() {
     document.getElementById("challenge-hud").classList.add("hidden");
-    document.getElementById("results-screen").classList.remove("hidden");
+    const resScreen = document.getElementById("results-screen");
+    openAnimModal(resScreen);
+    
     document.getElementById("final-score-val").textContent = this.score;
 
     // Mistakes List
@@ -2523,6 +2531,78 @@ const resultsScreen = document.getElementById("results-screen");
 // Game State Control
 let currentGameMode = "menu"; // 'menu', 'normal', 'challenge'
 
+
+// ---------------------------------------------------------
+// Custom Modal & Animation Logic
+// ---------------------------------------------------------
+
+/**
+ * Shows a custom modal with animation
+ * @param {string} title - Title of the modal
+ * @param {string} message - Content message
+ * @param {string} type - 'info' | 'confirm'
+ * @returns {Promise<boolean>} - Resolves true if confirmed, false if cancelled/closed
+ */
+function showModal(title, message, type = "info") {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("generic-modal");
+    const titleEl = document.getElementById("modal-title");
+    const msgEl = document.getElementById("modal-message");
+    const confirmBtn = document.getElementById("modal-btn-confirm");
+    const cancelBtn = document.getElementById("modal-btn-cancel");
+
+    titleEl.textContent = title;
+    msgEl.innerHTML = message; // Allow HTML for formatting
+
+    // Reset Buttons
+    confirmBtn.onclick = null;
+    cancelBtn.onclick = null;
+    cancelBtn.classList.add("hidden");
+
+    if (type === "confirm") {
+      cancelBtn.classList.remove("hidden");
+    }
+
+    const closeScale = (result) => {
+      closeAnimModal(modal);
+      resolve(result);
+    };
+
+    confirmBtn.onclick = () => closeScale(true);
+    cancelBtn.onclick = () => closeScale(false);
+
+    openAnimModal(modal);
+  });
+}
+
+function openAnimModal(element) {
+  element.classList.remove("hidden");
+  element.classList.remove("anim-close");
+  // Force Reflow
+  void element.offsetWidth;
+  element.classList.add("anim-open");
+}
+
+function closeAnimModal(element) {
+  element.classList.remove("anim-open");
+  element.classList.add("anim-close");
+  
+  // Wait for animation to finish before adding hidden
+  element.addEventListener("animationend", () => {
+    if (element.classList.contains("anim-close")) {
+      element.classList.add("hidden");
+      element.classList.remove("anim-close");
+    }
+  }, { once: true });
+  
+  // Fallback for safety (interaction issues)
+  setTimeout(() => {
+     if (!element.classList.contains("hidden")) {
+        element.classList.add("hidden");
+     }
+  }, 350);
+}
+
 function setupGameUI() {
   // Instructions Modal
   const instructionsScreen = document.getElementById("instructions-screen");
@@ -2531,18 +2611,18 @@ function setupGameUI() {
 
   if (openBtn) {
     openBtn.addEventListener("click", () => {
-      instructionsScreen.classList.remove("hidden");
+      openAnimModal(instructionsScreen);
     });
   }
   if (closeBtn) {
     closeBtn.addEventListener("click", () => {
-      instructionsScreen.classList.add("hidden");
+      closeAnimModal(instructionsScreen);
     });
   }
   if (instructionsScreen) {
     instructionsScreen.addEventListener("click", (e) => {
       if (e.target === instructionsScreen) {
-        instructionsScreen.classList.add("hidden");
+        closeAnimModal(instructionsScreen);
       }
     });
   }
@@ -2566,10 +2646,11 @@ function setupGameUI() {
   // Sidebar Buttons Logic
 
   // Clear Button (Shared)
+  // Clear Button (Shared)
   document.getElementById("clear-btn").addEventListener("click", () => {
-    if (confirm("確定要清除所有元件嗎？")) {
-      clearComponents();
-    }
+    showModal("清除確認", "確定要清除所有元件嗎？", "confirm").then((confirmed) => {
+      if (confirmed) clearComponents();
+    });
   });
 
   // Verify Button (Challenge Only)
@@ -2578,11 +2659,14 @@ function setupGameUI() {
   });
 
   // Home Button (Shared)
+  // Home Button (Shared)
   document.getElementById("home-btn").addEventListener("click", () => {
     if (currentGameMode === "challenge") {
-      if (confirm("確定要放棄挑戰並回到首頁嗎？")) {
-        showStartScreen();
-      }
+      showModal("離開挑戰", "確定要放棄挑戰並回到首頁嗎？", "confirm").then(
+        (confirmed) => {
+          if (confirmed) showStartScreen();
+        }
+      );
     } else {
       showStartScreen();
     }
@@ -2594,7 +2678,7 @@ function setupGameUI() {
   );
   if (sidebarInstructionsBtn) {
     sidebarInstructionsBtn.addEventListener("click", () => {
-      instructionsScreen.classList.remove("hidden");
+      openAnimModal(instructionsScreen);
     });
   }
 
@@ -2604,15 +2688,16 @@ function setupGameUI() {
 
 function showStartScreen() {
   currentGameMode = "menu";
-  startScreen.classList.remove("hidden");
+  openAnimModal(startScreen); // Animate Start Screen
   challengeHUD.classList.add("hidden");
-  resultsScreen.classList.add("hidden");
+  // Ensure others are closed properly without animation callbacks interfering
+  resultsScreen.classList.add("hidden"); 
   clearComponents();
 }
 
 function startNormalMode() {
   currentGameMode = "normal";
-  startScreen.classList.add("hidden");
+  closeAnimModal(startScreen); // Close Start Screen
   challengeHUD.classList.add("hidden");
   resultsScreen.classList.add("hidden");
   clearComponents();
@@ -2621,7 +2706,7 @@ function startNormalMode() {
 
 function startChallengeMode(count) {
   currentGameMode = "challenge";
-  startScreen.classList.add("hidden");
+  closeAnimModal(startScreen);
   challengeHUD.classList.remove("hidden");
   resultsScreen.classList.add("hidden");
   clearComponents();
