@@ -455,80 +455,7 @@ main {
 }
 
 /* Landscape on Mobile (height is small) */
-@media (max-height: 600px) and (orientation: landscape) {
-  header {
-    display: none; /* Maximize vertical space */
-  }
-
-  .container {
-    padding: 5px;
-  }
-
-  main {
-    flex-direction: row; /* Side by side */
-  }
-
-  .sidebar {
-    width: 280px;
-    height: 100%;
-    max-height: none; /* Fix: Overwrite 50vh limit from portrait mode */
-    overflow-y: auto;
-  }
-
-  .toolbox {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .component-item span {
-    display: block; /* Show text again if space allows or hide consistently */
-    font-size: 0.7rem;
-  }
-
-  .workspace-container {
-    height: 100%;
-  }
-
-  /* Optimized Results Panel for Landscape Mobile */
-  .results-panel {
-    flex-direction: row; /* Side by Side */
-    max-width: 750px;
-    height: 90vh;
-    padding: 1.5rem;
-    gap: 20px;
-    overflow: hidden; /* Prevent body scroll */
-  }
-
-  .results-summary {
-    width: 40%;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .results-details {
-    width: 60%;
-    height: 100%;
-    overflow-y: auto; /* Scrollable Details */
-    justify-content: flex-start;
-    padding-right: 5px;
-  }
-
-  .results-summary h2 {
-    font-size: 1.8rem;
-    margin-bottom: 10px;
-  }
-
-  .results-summary .final-score {
-    font-size: 2rem;
-    margin: 10px 0;
-  }
-
-  .results-summary #btn-restart {
-    width: auto;
-    padding: 10px 20px;
-    font-size: 1rem;
-    margin-top: 10px;
-  }
-}
+/* Landscape Media Query moved to end of file */
 
 /* ========================================= */
 /* Challenge Mode UI Styles                  */
@@ -963,4 +890,80 @@ main {
   max-width: 150px;
   border-radius: 50px;
   border: none;
+}
+
+/* Optimized Landscape Support (Moved to End for Specificity) */
+@media (max-height: 600px) and (orientation: landscape) {
+  header {
+    display: none;
+  }
+
+  .container {
+    padding: 5px;
+  }
+
+  main {
+    flex-direction: row;
+  }
+
+  .sidebar {
+    width: 280px;
+    height: 100%;
+    max-height: none;
+    overflow-y: auto;
+  }
+
+  .toolbox {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .component-item span {
+    display: block;
+    font-size: 0.7rem;
+  }
+
+  .workspace-container {
+    height: 100%;
+  }
+
+  /* Optimized Results Panel for Landscape Mobile */
+  .panel.results-panel {
+    flex-direction: row;
+    max-width: 750px;
+    height: 90vh;
+    padding: 1.5rem;
+    gap: 20px;
+    overflow: hidden;
+  }
+
+  .results-summary {
+    width: 40%;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .results-details {
+    width: 60%;
+    height: 100%;
+    overflow-y: auto;
+    justify-content: flex-start;
+    padding-right: 5px;
+  }
+
+  .results-summary h2 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+  }
+
+  .results-summary .final-score {
+    font-size: 2rem;
+    margin: 10px 0;
+  }
+
+  .results-summary #btn-restart {
+    width: auto;
+    padding: 10px 20px;
+    font-size: 1rem;
+    margin-top: 10px;
+  }
 }
