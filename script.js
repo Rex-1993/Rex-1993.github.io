@@ -615,7 +615,8 @@ function drawTerminalPoint(ctx, x, y, isHover) {
 // ---------------------------------------------------------
 class CircuitAnalyzer {
   static analyze(components, wires) {
-    if (components.length === 0) return { isValid: false, message: "沒有放置任何元件" };
+    if (components.length === 0)
+      return { isValid: false, message: "沒有放置任何元件" };
 
     // 1. Build Graph (Node -> Components)
     const nodeMap = new Map(); // NodeID -> List of {comp, terminalId}
@@ -657,9 +658,9 @@ class CircuitAnalyzer {
     });
 
     // Helper: Get components of specific type
-    const batts = components.filter(c => c.type === 'battery');
-    const bulbs = components.filter(c => c.type === 'bulb');
-    const motors = components.filter(c => c.type === 'motor');
+    const batts = components.filter((c) => c.type === "battery");
+    const bulbs = components.filter((c) => c.type === "bulb");
+    const motors = components.filter((c) => c.type === "motor");
 
     return {
       batts,
@@ -667,12 +668,12 @@ class CircuitAnalyzer {
       motors,
       componentConnections,
       checkSeries: (comps) => this.checkSeries(comps, componentConnections),
-      checkParallel: (comps) => this.checkParallel(comps, componentConnections)
+      checkParallel: (comps) => this.checkParallel(comps, componentConnections),
     };
   }
 
   // Check if components are in Series
-  // Definition: They form a single path. Each component shares a node with the previous one, 
+  // Definition: They form a single path. Each component shares a node with the previous one,
   // and that node has degree 2 (only those two components connected).
   static checkSeries(comps, connMap) {
     if (comps.length < 2) return true; // Single component is trivially series with itself? Or meaningless.
@@ -684,7 +685,7 @@ class CircuitAnalyzer {
     // Let's create a subgraph of just these components.
     // Count degree of each node considering ONLY these components.
     const nodeDegree = new Map();
-    comps.forEach(c => {
+    comps.forEach((c) => {
       const { n0, n1 } = connMap.get(c.id);
       nodeDegree.set(n0, (nodeDegree.get(n0) || 0) + 1);
       nodeDegree.set(n1, (nodeDegree.get(n1) || 0) + 1);
@@ -701,7 +702,7 @@ class CircuitAnalyzer {
       else return false; // Branching or loops
     }
 
-    return ends === 2 && mids === (comps.length - 1);
+    return ends === 2 && mids === comps.length - 1;
   }
 
   // Check if components are in Parallel
@@ -716,7 +717,8 @@ class CircuitAnalyzer {
     // All others must have {n0, n1} match {nA, nB} (order irrelevant)
     for (let i = 1; i < comps.length; i++) {
       const c = connMap.get(comps[i].id);
-      const match = (c.n0 === nA && c.n1 === nB) || (c.n0 === nB && c.n1 === nA);
+      const match =
+        (c.n0 === nA && c.n1 === nB) || (c.n0 === nB && c.n1 === nA);
       if (!match) return false;
     }
     return true;
@@ -735,12 +737,12 @@ class ChallengeManager {
     this.totalQuestions = 5;
     // Tracking for Analysis
     this.stats = {
-      'series_batt': { tries: 0, fails: 0, label: "電池串聯" },
-      'parallel_batt': { tries: 0, fails: 0, label: "電池並聯" },
-      'series_bulb': { tries: 0, fails: 0, label: "燈泡串聯" },
-      'parallel_bulb': { tries: 0, fails: 0, label: "燈泡並聯" },
-      'series_motor': { tries: 0, fails: 0, label: "馬達串聯" },
-      'parallel_motor': { tries: 0, fails: 0, label: "馬達並聯" }
+      series_batt: { tries: 0, fails: 0, label: "電池串聯" },
+      parallel_batt: { tries: 0, fails: 0, label: "電池並聯" },
+      series_bulb: { tries: 0, fails: 0, label: "燈泡串聯" },
+      parallel_bulb: { tries: 0, fails: 0, label: "燈泡並聯" },
+      series_motor: { tries: 0, fails: 0, label: "馬達串聯" },
+      parallel_motor: { tries: 0, fails: 0, label: "馬達並聯" },
     };
   }
 
@@ -750,7 +752,7 @@ class ChallengeManager {
     this.currentIndex = 0;
     this.mistakes = [];
     // Reset stats
-    Object.keys(this.stats).forEach(key => {
+    Object.keys(this.stats).forEach((key) => {
       this.stats[key].tries = 0;
       this.stats[key].fails = 0;
     });
@@ -789,36 +791,37 @@ class ChallengeManager {
       if (category < 0.15) {
         // Series Batt (2-3)
         const n = 2 + Math.floor(Math.random() * 2); // 2 or 3
-        addQ('series_batt', n, `請串聯 ${n} 顆電池供電給 1 顆燈泡`);
+        addQ("series_batt", n, `請串聯 ${n} 顆電池供電給 1 顆燈泡`);
       } else if (category < 0.3) {
         // Parallel Batt (2-3)
         const n = 2 + Math.floor(Math.random() * 2); // 2 or 3
-        addQ('parallel_batt', n, `請並聯 ${n} 顆電池供電給 1 顆燈泡`);
+        addQ("parallel_batt", n, `請並聯 ${n} 顆電池供電給 1 顆燈泡`);
       } else if (category < 0.53) {
         // Series Bulb (2-4)
         const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
-        addQ('series_bulb', n, `請使用 1 顆電池，串聯 ${n} 顆燈泡`);
+        addQ("series_bulb", n, `請使用 1 顆電池，串聯 ${n} 顆燈泡`);
       } else if (category < 0.76) {
         // Parallel Bulb (2-4)
         const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
-        addQ('parallel_bulb', n, `請使用 1 顆電池，並聯 ${n} 顆燈泡`);
+        addQ("parallel_bulb", n, `請使用 1 顆電池，並聯 ${n} 顆燈泡`);
       } else if (category < 0.88) {
         // Series Motor (2-4)
         const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
-        addQ('series_motor', n, `請使用 1 顆電池，串聯 ${n} 顆馬達`);
+        addQ("series_motor", n, `請使用 1 顆電池，串聯 ${n} 顆馬達`);
       } else {
         // Parallel Motor (2-4)
         const n = 2 + Math.floor(Math.random() * 3); // 2, 3, 4
-        addQ('parallel_motor', n, `請使用 1 顆電池，並聯 ${n} 顆馬達`);
+        addQ("parallel_motor", n, `請使用 1 顆電池，並聯 ${n} 顆馬達`);
       }
     }
   }
 
   updateHUD() {
-    document.getElementById('score-val').textContent = this.score;
-    document.getElementById('total-val').textContent = this.totalQuestions;
-    document.getElementById('question-text').textContent =
-      `Q${this.currentIndex + 1}: ${this.questions[this.currentIndex].text}`;
+    document.getElementById("score-val").textContent = this.score;
+    document.getElementById("total-val").textContent = this.totalQuestions;
+    document.getElementById("question-text").textContent = `Q${
+      this.currentIndex + 1
+    }: ${this.questions[this.currentIndex].text}`;
   }
 
   checkAnswer(components, wires) {
@@ -840,40 +843,50 @@ class ChallengeManager {
     let failReason = "電路連接錯誤";
 
     // Logic Check
-    if (q.type === 'series_batt') {
+    if (q.type === "series_batt") {
       const needBatts = q.param;
-      if (battUsed.length !== needBatts) failReason = `電池數量錯誤 (需要 ${needBatts}, 使用 ${battUsed.length})`;
+      if (battUsed.length !== needBatts)
+        failReason = `電池數量錯誤 (需要 ${needBatts}, 使用 ${battUsed.length})`;
       else if (bulbUsed.length < 1) failReason = "沒有連接燈泡";
       else if (!analysis.checkSeries(battUsed)) failReason = "電池沒有正確串聯";
       else isCorrect = true;
-    } else if (q.type === 'parallel_batt') {
+    } else if (q.type === "parallel_batt") {
       const needBatts = q.param;
-      if (battUsed.length !== needBatts) failReason = `電池數量錯誤 (需要 ${needBatts}, 使用 ${battUsed.length})`;
+      if (battUsed.length !== needBatts)
+        failReason = `電池數量錯誤 (需要 ${needBatts}, 使用 ${battUsed.length})`;
       else if (bulbUsed.length < 1) failReason = "沒有連接燈泡";
-      else if (!analysis.checkParallel(battUsed)) failReason = "電池沒有正確並聯";
+      else if (!analysis.checkParallel(battUsed))
+        failReason = "電池沒有正確並聯";
       else isCorrect = true;
-    } else if (q.type === 'parallel_bulb') {
+    } else if (q.type === "parallel_bulb") {
       const needBulbs = q.param;
-      if (bulbUsed.length !== needBulbs) failReason = `燈泡數量錯誤 (需要 ${needBulbs}, 使用 ${bulbUsed.length})`;
-      else if (!analysis.checkParallel(bulbUsed)) failReason = "燈泡沒有正確並聯";
+      if (bulbUsed.length !== needBulbs)
+        failReason = `燈泡數量錯誤 (需要 ${needBulbs}, 使用 ${bulbUsed.length})`;
+      else if (!analysis.checkParallel(bulbUsed))
+        failReason = "燈泡沒有正確並聯";
       else if (battUsed.length < 1) failReason = "沒有連接電池";
       else isCorrect = true;
-    } else if (q.type === 'series_bulb') {
+    } else if (q.type === "series_bulb") {
       const needBulbs = q.param;
-      if (bulbUsed.length !== needBulbs) failReason = `燈泡數量錯誤 (需要 ${needBulbs}, 使用 ${bulbUsed.length})`;
+      if (bulbUsed.length !== needBulbs)
+        failReason = `燈泡數量錯誤 (需要 ${needBulbs}, 使用 ${bulbUsed.length})`;
       else if (!analysis.checkSeries(bulbUsed)) failReason = "燈泡沒有正確串聯";
       else if (battUsed.length < 1) failReason = "沒有連接電池";
       else isCorrect = true;
-    } else if (q.type === 'parallel_motor') {
+    } else if (q.type === "parallel_motor") {
       const needMotors = q.param;
-      if (motorUsed.length !== needMotors) failReason = `馬達數量錯誤 (需要 ${needMotors}, 使用 ${motorUsed.length})`;
-      else if (!analysis.checkParallel(motorUsed)) failReason = "馬達沒有正確並聯";
+      if (motorUsed.length !== needMotors)
+        failReason = `馬達數量錯誤 (需要 ${needMotors}, 使用 ${motorUsed.length})`;
+      else if (!analysis.checkParallel(motorUsed))
+        failReason = "馬達沒有正確並聯";
       else if (battUsed.length < 1) failReason = "沒有連接電池";
       else isCorrect = true;
-    } else if (q.type === 'series_motor') {
+    } else if (q.type === "series_motor") {
       const needMotors = q.param;
-      if (motorUsed.length !== needMotors) failReason = `馬達數量錯誤 (需要 ${needMotors}, 使用 ${motorUsed.length})`;
-      else if (!analysis.checkSeries(motorUsed)) failReason = "馬達沒有正確串聯";
+      if (motorUsed.length !== needMotors)
+        failReason = `馬達數量錯誤 (需要 ${needMotors}, 使用 ${motorUsed.length})`;
+      else if (!analysis.checkSeries(motorUsed))
+        failReason = "馬達沒有正確串聯";
       else if (battUsed.length < 1) failReason = "沒有連接電池";
       else isCorrect = true;
     }
@@ -900,33 +913,33 @@ class ChallengeManager {
   }
 
   endGame() {
-    document.getElementById('challenge-hud').classList.add('hidden');
-    document.getElementById('results-screen').classList.remove('hidden');
-    document.getElementById('final-score-val').textContent = this.score;
+    document.getElementById("challenge-hud").classList.add("hidden");
+    document.getElementById("results-screen").classList.remove("hidden");
+    document.getElementById("final-score-val").textContent = this.score;
 
     // Mistakes List
-    const list = document.getElementById('mistakes-list');
+    const list = document.getElementById("mistakes-list");
     list.innerHTML = "";
-    this.mistakes.forEach(m => {
-      const item = document.createElement('div');
-      item.className = 'mistake-item';
+    this.mistakes.forEach((m) => {
+      const item = document.createElement("div");
+      item.className = "mistake-item";
       item.innerHTML = `<div class="mistake-q">${m.q}</div><div class="mistake-reason">${m.reason}</div>`;
       list.appendChild(item);
     });
 
     // Application of Weakness Analysis
-    const wReport = document.getElementById('weakness-report');
-    const wList = document.getElementById('weakness-list');
+    const wReport = document.getElementById("weakness-report");
+    const wList = document.getElementById("weakness-list");
     wList.innerHTML = "";
 
     let hasWeakness = false;
-    Object.keys(this.stats).forEach(key => {
+    Object.keys(this.stats).forEach((key) => {
       const s = this.stats[key];
       if (s.tries > 0 && s.fails > 0) {
         // If they failed at least once
         hasWeakness = true;
-        const item = document.createElement('div');
-        item.className = 'weakness-item';
+        const item = document.createElement("div");
+        item.className = "weakness-item";
         // Simple logic: If fails > 0, mention it. Could be % based.
         // "燈泡串聯需加強 (錯誤 1/2)"
         item.textContent = `${s.label}需加強 (錯誤 ${s.fails}/${s.tries}題)`;
@@ -935,9 +948,9 @@ class ChallengeManager {
     });
 
     if (hasWeakness) {
-      wReport.classList.remove('hidden');
+      wReport.classList.remove("hidden");
     } else {
-      wReport.classList.add('hidden');
+      wReport.classList.add("hidden");
       // Maybe show message "完美無缺！" if score is max?
     }
   }
@@ -990,14 +1003,22 @@ class PathFinder {
     const ey = Math.floor(endPos.y / this.cellSize);
 
     // If start or end are out of bounds, fallback to direct
-    if (sx < 0 || sx >= this.width || sy < 0 || sy >= this.height) return [startPos, endPos];
-    if (ex < 0 || ex >= this.width || ey < 0 || ey >= this.height) return [startPos, endPos];
+    if (sx < 0 || sx >= this.width || sy < 0 || sy >= this.height)
+      return [startPos, endPos];
+    if (ex < 0 || ex >= this.width || ey < 0 || ey >= this.height)
+      return [startPos, endPos];
 
     // Node: { x, y, g, h, parent }
     const openSet = [];
     const closedSet = new Set();
 
-    const startNode = { x: sx, y: sy, g: 0, h: this.heuristic(sx, sy, ex, ey), parent: null };
+    const startNode = {
+      x: sx,
+      y: sy,
+      g: 0,
+      h: this.heuristic(sx, sy, ex, ey),
+      parent: null,
+    };
     openSet.push(startNode);
 
     // Helper to get index
@@ -1016,7 +1037,10 @@ class PathFinder {
       // Get node with lowest f = g + h
       let lowestIndex = 0;
       for (let i = 1; i < openSet.length; i++) {
-        if (openSet[i].g + openSet[i].h < openSet[lowestIndex].g + openSet[lowestIndex].h) {
+        if (
+          openSet[i].g + openSet[i].h <
+          openSet[lowestIndex].g + openSet[lowestIndex].h
+        ) {
           lowestIndex = i;
         }
       }
@@ -1032,7 +1056,7 @@ class PathFinder {
           // Convert grid back to pixel center
           path.push({
             x: temp.x * this.cellSize + this.cellSize / 2,
-            y: temp.y * this.cellSize + this.cellSize / 2
+            y: temp.y * this.cellSize + this.cellSize / 2,
           });
           temp = temp.parent;
         }
@@ -1051,11 +1075,17 @@ class PathFinder {
         { x: current.x, y: current.y - 1 },
         { x: current.x, y: current.y + 1 },
         { x: current.x - 1, y: current.y },
-        { x: current.x + 1, y: current.y }
+        { x: current.x + 1, y: current.y },
       ];
 
       for (let neighbor of neighbors) {
-        if (neighbor.x < 0 || neighbor.x >= this.width || neighbor.y < 0 || neighbor.y >= this.height) continue;
+        if (
+          neighbor.x < 0 ||
+          neighbor.x >= this.width ||
+          neighbor.y < 0 ||
+          neighbor.y >= this.height
+        )
+          continue;
 
         const nIdx = getIdx(neighbor.x, neighbor.y);
         if (closedSet.has(nIdx)) continue;
@@ -1072,7 +1102,10 @@ class PathFinder {
           // Exception: If this is the GOAL node (connecting to a terminal inside a component's potential box), allow it.
           // But terminals are usually at edges.
           // Let's assume strict blocking unless it's the target node.
-          if (!(neighbor.x === ex && neighbor.y === ey) && !(neighbor.x === sx && neighbor.y === sy)) {
+          if (
+            !(neighbor.x === ex && neighbor.y === ey) &&
+            !(neighbor.x === sx && neighbor.y === sy)
+          ) {
             moveCost = 1000;
           }
         }
@@ -1090,10 +1123,18 @@ class PathFinder {
 
         const tentativeG = current.g + moveCost;
 
-        let neighborNode = openSet.find(n => n.x === neighbor.x && n.y === neighbor.y);
+        let neighborNode = openSet.find(
+          (n) => n.x === neighbor.x && n.y === neighbor.y
+        );
 
         if (!neighborNode) {
-          neighborNode = { x: neighbor.x, y: neighbor.y, g: tentativeG, h: this.heuristic(neighbor.x, neighbor.y, ex, ey), parent: current };
+          neighborNode = {
+            x: neighbor.x,
+            y: neighbor.y,
+            g: tentativeG,
+            h: this.heuristic(neighbor.x, neighbor.y, ex, ey),
+            parent: current,
+          };
           openSet.push(neighborNode);
         } else if (tentativeG < neighborNode.g) {
           neighborNode.g = tentativeG;
@@ -1112,7 +1153,7 @@ class PathFinder {
     const newPath = [path[0]];
     let lastPoint = path[0];
     // Direction from 0 to 1
-    // Note: Use coarse check to handle float precision if needed, 
+    // Note: Use coarse check to handle float precision if needed,
     // but grid points are exact integers (or .5), start/end might be float.
 
     for (let i = 1; i < path.length - 1; i++) {
@@ -1156,8 +1197,6 @@ function clearComponents() {
   wires = [];
   runSimulation();
 }
-
-
 
 function isHoveringTerminal(comp, tid) {
   if (!hoverTerminal) return false;
@@ -1207,8 +1246,10 @@ resizeCanvas();
 
 function getMousePos(evt) {
   const rect = canvas.getBoundingClientRect();
-  const cX = evt.clientX || (evt.touches && evt.touches[0] ? evt.touches[0].clientX : 0);
-  const cY = evt.clientY || (evt.touches && evt.touches[0] ? evt.touches[0].clientY : 0);
+  const cX =
+    evt.clientX || (evt.touches && evt.touches[0] ? evt.touches[0].clientX : 0);
+  const cY =
+    evt.clientY || (evt.touches && evt.touches[0] ? evt.touches[0].clientY : 0);
   return {
     x: cX - rect.left,
     y: cY - rect.top,
@@ -1251,37 +1292,47 @@ toolboxItems.forEach((item) => {
     const touch = e.touches[0];
     const moveX = touch.clientX;
     const moveY = touch.clientY;
+
+    // Calculate deltas
+    const dx = moveX - touchStartX;
+    const dy = moveY - touchStartY;
     lastMoveX = moveX;
     lastMoveY = moveY;
 
-    const dist = Math.hypot(moveX - touchStartX, moveY - touchStartY);
+    if (!isTouchDragging) {
+      // If mostly vertical movement, let it scroll naturally
+      if (Math.abs(dy) > Math.abs(dx)) {
+        return; // Do nothing, browser handles scroll
+      }
 
-    if (dist > 10 && !isTouchDragging) {
-      isTouchDragging = true;
-      // Create Ghost
-      ghostEl = item.cloneNode(true);
-      ghostEl.style.position = 'fixed';
-      ghostEl.style.left = moveX + 'px';
-      ghostEl.style.top = moveY + 'px';
-      ghostEl.style.opacity = '0.8';
-      ghostEl.style.pointerEvents = 'none'; // Passthrough
-      ghostEl.style.zIndex = '9999';
-      ghostEl.style.width = item.offsetWidth + 'px'; // Match size
-      document.body.appendChild(ghostEl);
+      // If mostly horizontal and moved enough, start custom drag
+      if (Math.abs(dx) > 10) {
+        isTouchDragging = true;
+        // Create Ghost
+        ghostEl = item.cloneNode(true);
+        ghostEl.style.position = "fixed";
+        ghostEl.style.left = moveX + "px";
+        ghostEl.style.top = moveY + "px";
+        ghostEl.style.opacity = "0.8";
+        ghostEl.style.pointerEvents = "none"; // Passthrough
+        ghostEl.style.zIndex = "9999";
+        ghostEl.style.width = item.offsetWidth + "px"; // Match size
+        document.body.appendChild(ghostEl);
+      }
     }
 
     if (isTouchDragging) {
-      e.preventDefault(); // Stop scrolling
+      e.preventDefault(); // Stop scrolling only if we are dragging logic
       if (ghostEl) {
-        ghostEl.style.left = (moveX - ghostEl.offsetWidth / 2) + 'px';
-        ghostEl.style.top = (moveY - ghostEl.offsetHeight / 2) + 'px';
+        ghostEl.style.left = moveX - ghostEl.offsetWidth / 2 + "px";
+        ghostEl.style.top = moveY - ghostEl.offsetHeight / 2 + "px";
       }
     }
   };
 
   const onTouchEnd = (e) => {
-    document.removeEventListener('touchmove', onTouchMove);
-    document.removeEventListener('touchend', onTouchEnd);
+    document.removeEventListener("touchmove", onTouchMove);
+    document.removeEventListener("touchend", onTouchEnd);
 
     if (isTouchDragging) {
       // Drop Logic
@@ -1294,15 +1345,18 @@ toolboxItems.forEach((item) => {
 
         const cRect = canvas.getBoundingClientRect();
 
-        if (clientX >= cRect.left && clientX <= cRect.right &&
-          clientY >= cRect.top && clientY <= cRect.bottom) {
-
+        if (
+          clientX >= cRect.left &&
+          clientX <= cRect.right &&
+          clientY >= cRect.top &&
+          clientY <= cRect.bottom
+        ) {
           // Calculate canvas pos
           // Input clientX/Y are in viewport coordinates.
           // rect is in viewport coordinates.
           // Connection: rect.left/top are CSS values.
           // cx, cy will be CSS pixel offsets relative to canvas top-left.
-          // Since we scaled the context with ctx.scale(dpr, dpr), 
+          // Since we scaled the context with ctx.scale(dpr, dpr),
           // drawing at (cx, cy) works perfectly.
           const cx = clientX - cRect.left;
           const cy = clientY - cRect.top;
@@ -1326,16 +1380,20 @@ toolboxItems.forEach((item) => {
     isTouchDragging = false;
   };
 
-  item.addEventListener("touchstart", (e) => {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-    lastMoveX = touchStartX;
-    lastMoveY = touchStartY;
-    isTouchDragging = false;
+  item.addEventListener(
+    "touchstart",
+    (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+      lastMoveX = touchStartX;
+      lastMoveY = touchStartY;
+      isTouchDragging = false;
 
-    document.addEventListener('touchmove', onTouchMove, { passive: false });
-    document.addEventListener('touchend', onTouchEnd);
-  }, { passive: false });
+      document.addEventListener("touchmove", onTouchMove, { passive: false });
+      document.addEventListener("touchend", onTouchEnd);
+    },
+    { passive: false }
+  );
 
   // Click Handler (Mouse & Tap)
   item.addEventListener("click", (e) => {
@@ -1345,7 +1403,6 @@ toolboxItems.forEach((item) => {
     addComponent(item.dataset.type, rx, ry);
   });
 });
-
 
 canvas.addEventListener("dragover", (e) => e.preventDefault());
 canvas.addEventListener("drop", (e) => {
@@ -1520,7 +1577,8 @@ canvas.addEventListener("mouseup", (e) => {
 function checkCollision(comp, x, y) {
   // Helper to get dims
   const getDims = (c) => {
-    let w = 60, h = 60;
+    let w = 60,
+      h = 60;
     if (c.type === "battery") w = 120;
     if (c.type === "motor") w = 80;
     if (c.type === "paperclip" || c.type === "eraser") w = 90;
@@ -1584,10 +1642,6 @@ function resolveCollision(comp) {
   }
 }
 
-
-
-
-
 // ---------------------------------------------------------
 // Logic
 // ---------------------------------------------------------
@@ -1611,8 +1665,12 @@ function isMouseOverWire(wire, mx, my) {
 
 function isPointOnLine(px, py, x1, y1, x2, y2, tolerance) {
   // Bounding box check first
-  if (px < Math.min(x1, x2) - tolerance || px > Math.max(x1, x2) + tolerance ||
-    py < Math.min(y1, y2) - tolerance || py > Math.max(y1, y2) + tolerance) {
+  if (
+    px < Math.min(x1, x2) - tolerance ||
+    px > Math.max(x1, x2) + tolerance ||
+    py < Math.min(y1, y2) - tolerance ||
+    py > Math.max(y1, y2) + tolerance
+  ) {
     return false;
   }
 
@@ -1625,7 +1683,8 @@ function isPointOnLine(px, py, x1, y1, x2, y2, tolerance) {
   const dot = A * C + B * D;
   const len_sq = C * C + D * D;
   let param = -1;
-  if (len_sq !== 0) // in case of 0 length line
+  if (len_sq !== 0)
+    // in case of 0 length line
     param = dot / len_sq;
 
   let xx, yy;
@@ -1633,19 +1692,17 @@ function isPointOnLine(px, py, x1, y1, x2, y2, tolerance) {
   if (param < 0) {
     xx = x1;
     yy = y1;
-  }
-  else if (param > 1) {
+  } else if (param > 1) {
     xx = x2;
     yy = y2;
-  }
-  else {
+  } else {
     xx = x1 + param * C;
     yy = y1 + param * D;
   }
 
   const dx = px - xx;
   const dy = py - yy;
-  return (dx * dx + dy * dy) < tolerance * tolerance;
+  return dx * dx + dy * dy < tolerance * tolerance;
 }
 
 function addComponent(type, x, y) {
@@ -1658,8 +1715,8 @@ function addComponent(type, x, y) {
   const comp = new Component(type, x, y);
 
   // Resolve Collision immediately
-  resolveCollision(comp, components); // Note: components doesn't include comp yet, so pass list? 
-  // Actually, resolveCollision expects comp to be potentially in list or ignores it. 
+  resolveCollision(comp, components); // Note: components doesn't include comp yet, so pass list?
+  // Actually, resolveCollision expects comp to be potentially in list or ignores it.
   // Here comp is NOT in list 'components' yet.
   // My logic below will handle 'ignoreComp'. If it's not in list, no need to ignore.
 
@@ -1990,11 +2047,12 @@ function draw() {
   pathFinder.init(w, h);
 
   // 1. Mark Obstacles (Components)
-  components.forEach(comp => {
-    // Slightly smaller bbox for routing so wires can hug tightly? 
+  components.forEach((comp) => {
+    // Slightly smaller bbox for routing so wires can hug tightly?
     // Or standard bbox? Standard is safer.
     // Get BBox from isMouseOver logic or similar.
-    let w = 60, h = 60;
+    let w = 60,
+      h = 60;
     if (comp.type === "battery") w = 120;
     if (comp.type === "motor") w = 80;
     if (comp.type === "paperclip" || comp.type === "eraser") w = 90;
@@ -2044,7 +2102,9 @@ function draw() {
 
   // 4. Draw Selected Terminal Ghost Wire
   if (selectedTerminal) {
-    const p1 = selectedTerminal.comp.getTerminalPos(selectedTerminal.terminalId);
+    const p1 = selectedTerminal.comp.getTerminalPos(
+      selectedTerminal.terminalId
+    );
     const p2 = { x: lastMouseX, y: lastMouseY };
     const path = pathFinder.simplifyPath(pathFinder.findPath(p1, p2));
     drawPath(ctx, path, 0, true);
@@ -2122,7 +2182,8 @@ function drawPath(ctx, points, current = 0, isGhost = false) {
     ctx.setLineDash([8, 8]);
 
     const speed = Math.min(Math.abs(current) * 5, 5);
-    let dashOffset = current > 0 ? animationOffset * speed : -animationOffset * speed;
+    let dashOffset =
+      current > 0 ? animationOffset * speed : -animationOffset * speed;
 
     ctx.lineDashOffset = dashOffset;
     ctx.stroke();
@@ -2186,7 +2247,7 @@ canvas.addEventListener("touchstart", (e) => {
         clientY: pos.y + canvas.getBoundingClientRect().top,
         bubbles: true,
         cancelable: true,
-        button: 2 // Right button
+        button: 2, // Right button
       })
     );
   }, 500); // 500ms for long press
@@ -2208,7 +2269,10 @@ canvas.addEventListener("touchmove", (e) => {
   const pos = getTouchPos(e);
 
   // Create a move threshold to cancel long press
-  const moveDist = Math.hypot(pos.x - touchStartPosition.x, pos.y - touchStartPosition.y);
+  const moveDist = Math.hypot(
+    pos.x - touchStartPosition.x,
+    pos.y - touchStartPosition.y
+  );
   if (moveDist > 10) {
     clearTimeout(longPressTimer);
   }
@@ -2288,7 +2352,7 @@ menuDelete.addEventListener("click", () => {
   if (contextMenuTarget) {
     // Check if it's a wire (has 'from' property) or Component
     if (contextMenuTarget.from) {
-      wires = wires.filter(w => w !== contextMenuTarget);
+      wires = wires.filter((w) => w !== contextMenuTarget);
       runSimulation();
       updateEducationalFeedback();
     } else {
@@ -2342,7 +2406,6 @@ canvas.addEventListener("contextmenu", (e) => {
 
       let iMa = Math.abs(target.current * 1000);
       menuI.textContent = `電流: ${iMa.toFixed(2)} mA`;
-
     } else {
       // --- COMPONENT ---
 
@@ -2409,7 +2472,6 @@ canvas.addEventListener("contextmenu", (e) => {
 
     contextMenu.style.left = menuX + "px";
     contextMenu.style.top = menuY + "px";
-
   } else {
     contextMenu.classList.add("hidden");
   }
@@ -2437,7 +2499,6 @@ clearBtn.addEventListener("click", () => {
 // I should remove it to have a single source of truth for 'Clear' logic in setupGameUI,
 // especially since Challenge Mode might want confirmation logic unified.
 
-
 // Automated Tests hooks (Simplified for concise file)
 function runTestSuite() {
   console.log(
@@ -2453,7 +2514,7 @@ const challengeHUD = document.getElementById("challenge-hud");
 const resultsScreen = document.getElementById("results-screen");
 
 // Game State Control
-let currentGameMode = 'menu'; // 'menu', 'normal', 'challenge'
+let currentGameMode = "menu"; // 'menu', 'normal', 'challenge'
 
 function setupGameUI() {
   // Instructions Modal
@@ -2484,10 +2545,12 @@ function setupGameUI() {
     startNormalMode();
   });
 
-  document.getElementById("btn-challenge-mode").addEventListener("click", () => {
-    const count = document.getElementById("challenge-count").value;
-    startChallengeMode(count);
-  });
+  document
+    .getElementById("btn-challenge-mode")
+    .addEventListener("click", () => {
+      const count = document.getElementById("challenge-count").value;
+      startChallengeMode(count);
+    });
 
   document.getElementById("btn-restart").addEventListener("click", () => {
     showStartScreen();
@@ -2509,7 +2572,7 @@ function setupGameUI() {
 
   // Home Button (Shared)
   document.getElementById("home-btn").addEventListener("click", () => {
-    if (currentGameMode === 'challenge') {
+    if (currentGameMode === "challenge") {
       if (confirm("確定要放棄挑戰並回到首頁嗎？")) {
         showStartScreen();
       }
@@ -2519,7 +2582,9 @@ function setupGameUI() {
   });
 
   // Sidebar Instructions Button
-  const sidebarInstructionsBtn = document.getElementById("sidebar-instructions-btn");
+  const sidebarInstructionsBtn = document.getElementById(
+    "sidebar-instructions-btn"
+  );
   if (sidebarInstructionsBtn) {
     sidebarInstructionsBtn.addEventListener("click", () => {
       instructionsScreen.classList.remove("hidden");
@@ -2528,7 +2593,7 @@ function setupGameUI() {
 }
 
 function showStartScreen() {
-  currentGameMode = 'menu';
+  currentGameMode = "menu";
   startScreen.classList.remove("hidden");
   challengeHUD.classList.add("hidden");
   resultsScreen.classList.add("hidden");
@@ -2536,21 +2601,21 @@ function showStartScreen() {
 }
 
 function startNormalMode() {
-  currentGameMode = 'normal';
+  currentGameMode = "normal";
   startScreen.classList.add("hidden");
   challengeHUD.classList.add("hidden");
   resultsScreen.classList.add("hidden");
   clearComponents();
-  setToolboxMode('normal');
+  setToolboxMode("normal");
 }
 
 function startChallengeMode(count) {
-  currentGameMode = 'challenge';
+  currentGameMode = "challenge";
   startScreen.classList.add("hidden");
   challengeHUD.classList.remove("hidden");
   resultsScreen.classList.add("hidden");
   clearComponents();
-  setToolboxMode('challenge');
+  setToolboxMode("challenge");
   challengeManager.start(count);
 }
 
@@ -2559,18 +2624,18 @@ function setToolboxMode(mode) {
   const verifyBtn = document.getElementById("verify-btn");
 
   // Manage Sidebar Buttons Visibility
-  if (mode === 'challenge') {
-    verifyBtn.classList.remove('hidden');
+  if (mode === "challenge") {
+    verifyBtn.classList.remove("hidden");
   } else {
-    verifyBtn.classList.add('hidden');
+    verifyBtn.classList.add("hidden");
   }
 
   // Filter Components
-  items.forEach(item => {
+  items.forEach((item) => {
     const type = item.dataset.type;
-    if (mode === 'challenge') {
+    if (mode === "challenge") {
       // Only allow Battery, Bulb, Motor
-      if (['battery', 'bulb', 'motor'].includes(type)) {
+      if (["battery", "bulb", "motor"].includes(type)) {
         item.style.display = "flex";
       } else {
         item.style.display = "none";
@@ -2584,4 +2649,3 @@ function setToolboxMode(mode) {
 // Initialize UI
 setupGameUI();
 showStartScreen();
-
