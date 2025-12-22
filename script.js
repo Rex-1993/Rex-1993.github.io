@@ -2590,6 +2590,9 @@ function setupGameUI() {
       instructionsScreen.classList.remove("hidden");
     });
   }
+
+  // Initialize Touch Dragging for Toolbox
+  initToolboxTouch();
 }
 
 function showStartScreen() {
@@ -2643,6 +2646,117 @@ function setToolboxMode(mode) {
     } else {
       item.style.display = "flex";
     }
+  });
+}
+
+// ---------------------------------------------------------
+// iOS / Touch Optimization for Toolbox Dragging
+// ---------------------------------------------------------
+function initToolboxTouch() {
+  const items = document.querySelectorAll(".component-item");
+  let ghost = null;
+  let draggedType = null;
+  let touchOffsetX = 0;
+  let touchOffsetY = 0;
+
+  items.forEach((item) => {
+    item.addEventListener(
+      "touchstart",
+      (e) => {
+        // Only single finger touch
+        if (e.touches.length > 1) return;
+
+        draggedType = item.dataset.type;
+        const touch = e.touches[0];
+        const rect = item.getBoundingClientRect();
+
+        // Calculate offset to grab center roughly or relative
+        touchOffsetX = touch.clientX - rect.left;
+        touchOffsetY = touch.clientY - rect.top;
+
+        // Create Ghost Element
+        ghost = item.cloneNode(true);
+        ghost.style.position = "absolute";
+        ghost.style.zIndex = "9999";
+        ghost.style.opacity = "0.8";
+        ghost.style.pointerEvents = "none"; // Let events pass through
+        ghost.style.left = rect.left + "px";
+        ghost.style.top = rect.top + "px";
+        ghost.style.width = rect.width + "px"; // Keep size
+        ghost.style.height = rect.height + "px";
+        ghost.style.transform = "scale(1.1)"; // Slight pop
+        ghost.style.boxShadow = "0 10px 20px rgba(0,0,0,0.3)";
+
+        document.body.appendChild(ghost);
+
+        // Prevent heavy scrolling if intended to drag? 
+        // We allow default first to see if it's a scroll or hold.
+        // But for reliable games, preventing default on specific grab areas is better
+        // IF we don't need to scroll the toolbox itself too much. 
+        // Actually toolbox needs scroll. 
+        // Strategy: If user holds for > 100ms or moves visually 'out' it's a drag.
+        // Simple approach: Immediate drag, but sticky scroll?
+        // Let's try: Prevent default implies NO SCROLL.
+        // We can't prevent default immediately or toolbox won't scroll.
+        // Better: We track movement. 
+        // If movement is horizontal (out of sidebar) -> Drag.
+        // If movement is vertical (inside sidebar) -> Scroll.
+        // But preventing default late is impossible (passive listeners).
+        
+        // Revised Strategy:
+        // Use a global Move handler.
+      },
+      { passive: false }
+    );
+
+    item.addEventListener(
+      "touchmove",
+      (e) => {
+        if (!ghost) return;
+        
+        const touch = e.touches[0];
+        
+        // Logic to determine if we should capture this as a drag or let it scroll
+        // If ghost exists, we assume we are dragging IF we moved enough?
+        // Or we just always drag if ghost exists.
+        e.preventDefault(); // Stop scrolling once we have a ghost? 
+        
+        ghost.style.left = touch.clientX - touchOffsetX + "px";
+        ghost.style.top = touch.clientY - touchOffsetY + "px";
+      },
+      { passive: false }
+    );
+
+    item.addEventListener("touchend", (e) => {
+      if (!ghost) return;
+
+      // Check drop target
+      // We need coordinates. changedTouches has the info.
+      const touch = e.changedTouches[0];
+      const clientX = touch.clientX;
+      const clientY = touch.clientY;
+
+      // Check if inside canvas bounds
+      const canvasRect = canvas.getBoundingClientRect();
+      if (
+        clientX >= canvasRect.left &&
+        clientX <= canvasRect.right &&
+        clientY >= canvasRect.top &&
+        clientY <= canvasRect.bottom
+      ) {
+        // Valid Drop
+        // Convert to Canvas Coordinates
+        const x = clientX - canvasRect.left;
+        const y = clientY - canvasRect.top;
+        
+        addComponent(draggedType, x, y);
+      }
+
+      // Cleanup
+      if (ghost.parentNode) ghost.parentNode.removeChild(ghost);
+      ghost = null;
+      draggedType = null;
+    });
   });
 }
 
