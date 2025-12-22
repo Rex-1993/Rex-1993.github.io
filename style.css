@@ -437,6 +437,7 @@ main {
   .sidebar {
     width: 280px;
     height: 100%;
+    max-height: none; /* Fix: Overwrite 50vh limit from portrait mode */
     overflow-y: auto;
   }
 
