@@ -2649,3 +2649,16 @@ function setToolboxMode(mode) {
 // Initialize UI
 setupGameUI();
 showStartScreen();
+
+// Global Click/Touch Handler for Context Menu Dismissal
+const handleGlobalClick = (e) => {
+  if (!contextMenu.classList.contains("hidden")) {
+    // If click/touch is NOT inside the context menu, close it
+    if (!contextMenu.contains(e.target)) {
+      contextMenu.classList.add("hidden");
+    }
+  }
+};
+
+document.addEventListener("mousedown", handleGlobalClick);
+document.addEventListener("touchstart", handleGlobalClick, { passive: false });
