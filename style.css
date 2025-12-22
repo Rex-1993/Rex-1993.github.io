@@ -411,8 +411,10 @@ main {
 
   .component-item {
     padding: 8px;
-    border-radius: 8px;
-    gap: 5px;
+    border-radius: 50%; /* Circle */
+    aspect-ratio: 1;    /* Perfect circle */
+    gap: 0;             /* Center icon */
+    justify-content: center;
   }
 
   .icon {
