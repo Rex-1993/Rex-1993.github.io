@@ -47,18 +47,7 @@
         </div>
       </div>
 
-      <!-- Challenge HUD (Hidden by default) -->
-      <div id="challenge-hud" class="hidden">
-        <div class="hud-top">
-          <div class="hud-score">
-            得分: <span id="score-val">0</span> / <span id="total-val">0</span>
-          </div>
-          <div class="hud-question">
-            題目: <span id="question-text">請連接電路...</span>
-          </div>
-        </div>
-        <!-- Buttons moved to sidebar -->
-      </div>
+      <!-- Challenge HUD moved to workspace -->
 
       <div id="results-screen" class="overlay hidden">
         <div class="panel results-panel">
@@ -85,10 +74,22 @@
           <div class="instructions-content">
             <h3>基本操作</h3>
             <ul>
-              <li><strong>拖曳元件：</strong>從元件箱將電池、燈泡等元件拖曳到工作區。</li>
-              <li><strong>連接電線：</strong>點擊元件的一個接點，然後點擊另一個元件的接點來連接電線。</li>
-              <li><strong>旋轉元件：</strong>點擊畫布上的元件可以旋轉它（順時針轉 90 度）。</li>
-              <li><strong>刪除元件或電線：</strong>對著元件或電線按右鍵（或觸控長按）選擇刪除元件。</li>
+              <li>
+                <strong>拖曳元件：</strong
+                >從元件箱將電池、燈泡等元件拖曳到工作區。
+              </li>
+              <li>
+                <strong>連接電線：</strong
+                >點擊元件的一個接點，然後點擊另一個元件的接點來連接電線。
+              </li>
+              <li>
+                <strong>旋轉元件：</strong>點擊畫布上的元件可以旋轉它（順時針轉
+                90 度）。
+              </li>
+              <li>
+                <strong>刪除元件或電線：</strong
+                >對著元件或電線按右鍵（或觸控長按）選擇刪除元件。
+              </li>
               <li><strong>右鍵選單：</strong>可以檢視元件詳細資訊。</li>
             </ul>
 
@@ -264,11 +265,24 @@
             <button id="verify-btn" class="btn success hidden">驗證答案</button>
             <button id="clear-btn" class="btn danger">清除全部</button>
             <button id="home-btn" class="btn home">回到首頁</button>
-            <button id="sidebar-instructions-btn" class="btn info">操作說明</button>
+            <button id="sidebar-instructions-btn" class="btn info">
+              操作說明
+            </button>
           </div>
         </div>
 
         <div class="workspace-container">
+          <!-- Challenge HUD (Integrated into background) -->
+          <div id="challenge-hud" class="hidden">
+            <div class="hud-score">
+              得分: <span id="score-val">0</span> /
+              <span id="total-val">0</span>
+            </div>
+            <div class="hud-question">
+              題目: <span id="question-text">請連接電路...</span>
+            </div>
+          </div>
+
           <canvas id="circuit-canvas"></canvas>
           <div id="short-warning" class="warning-banner hidden">
             ⚠️ 短路警告！電池過熱危險！
