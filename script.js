@@ -1705,7 +1705,14 @@ function isPointOnLine(px, py, x1, y1, x2, y2, tolerance) {
   return dx * dx + dy * dy < tolerance * tolerance;
 }
 
+let lastAddComponentTime = 0;
+
 function addComponent(type, x, y) {
+  // Global Debounce to prevent double-add (Touch vs Click race)
+  const now = Date.now();
+  if (now - lastAddComponentTime < 100) return;
+  lastAddComponentTime = now;
+
   if (!type) return; // Prevent malformed components
 
   // Snap initial pos
