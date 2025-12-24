@@ -813,8 +813,8 @@ canvas.addEventListener("contextmenu", (e) => {
 
 function showContextMenu(comp, x, y) {
     contextMenuTarget = comp;
-    contextMenu.style.left = x + "px";
-    contextMenu.style.top = y + "px";
+    
+    // Show first to measure
     contextMenu.classList.remove("hidden");
     
     // Update Menu Content
@@ -829,6 +829,25 @@ function showContextMenu(comp, x, y) {
     } else {
         menuDelete.classList.remove("hidden");
     }
+
+    // Calculate Positioning logic after content update (size might change)
+    const menuWidth = contextMenu.offsetWidth;
+    const menuHeight = contextMenu.offsetHeight;
+    const containerWidth = canvas.clientWidth;
+    const containerHeight = canvas.clientHeight;
+
+    // Adjust X
+    if (x + menuWidth > containerWidth) {
+        x -= menuWidth;
+    }
+
+    // Adjust Y
+    if (y + menuHeight > containerHeight) {
+        y -= menuHeight;
+    }
+
+    contextMenu.style.left = x + "px";
+    contextMenu.style.top = y + "px";
 }
 
 

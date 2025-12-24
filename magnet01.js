@@ -1271,10 +1271,30 @@ let contextMenuTarget = null;
 
 function showContextMenu(x, y, component) {
     contextMenuTarget = component;
-    contextMenu.style.left = x + "px";
-    contextMenu.style.top = y + "px";
+    
+    // First, show it to get accurate dimensions
     contextMenu.classList.remove("hidden");
     menuMaterial.textContent = "材質: " + component.getMaterialInfo();
+
+    // Calculate dimensions
+    const menuWidth = contextMenu.offsetWidth;
+    const menuHeight = contextMenu.offsetHeight;
+    const containerWidth = canvas.clientWidth;
+    const containerHeight = canvas.clientHeight;
+
+    // Adjust X (Horizontal)
+    if (x + menuWidth > containerWidth) {
+        x -= menuWidth;
+    }
+    
+    // Adjust Y (Vertical) 
+    if (y + menuHeight > containerHeight) {
+        y -= menuHeight;
+    }
+
+    // Apply corrected position
+    contextMenu.style.left = x + "px";
+    contextMenu.style.top = y + "px";
 }
 
 function hideContextMenu() {
