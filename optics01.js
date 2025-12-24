@@ -627,6 +627,7 @@ function handleMove(e) {
 }
 
 function handleEnd(e) {
+  if (e.button === 2) return; // Ignore right-click release
   if (longPressTimer) {
       clearTimeout(longPressTimer);
       longPressTimer = null;

@@ -921,7 +921,20 @@ canvas.addEventListener("mousemove", handleMove);
 canvas.addEventListener("touchmove", handleMove, { passive: false });
 canvas.addEventListener("mouseup", handleEnd);
 canvas.addEventListener("touchend", handleEnd);
-// canvas.addEventListener("contextmenu", ... ); // Already defined below
+canvas.addEventListener("contextmenu", (e) => {
+  e.preventDefault();
+  const pos = getEventPos(e);
+  const clicked = components
+    .slice()
+    .reverse()
+    .find((c) => isPointInPoly(pos, c.getCorners()));
+
+  if (clicked) {
+    showContextMenu(pos.x, pos.y, clicked);
+  } else {
+    hideContextMenu();
+  }
+});
 
 function handleStart(e) {
   e.preventDefault();
@@ -953,7 +966,7 @@ function handleStart(e) {
         // Long press triggered!
         isDragging = false; // Cancel drag
         draggedComponent = null;
-        showContextMenu(clicked, pos.x, pos.y);
+        showContextMenu(pos.x, pos.y, clicked);
     }, LONG_PRESS_DURATION);
 
   } else {
