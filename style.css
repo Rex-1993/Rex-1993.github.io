@@ -1001,23 +1001,24 @@ main {
 
   .mode-selection {
     margin-top: 1rem;
-    gap: 10px;
-    flex-direction: row; /* Arrange buttons horizontally */
-    flex-wrap: wrap;
-    justify-content: center;
+    gap: 15px; /* Slightly more gap for vertical */
+    flex-direction: column; /* Vertical alignment as requested */
+    align-items: center;
   }
 
   .btn-primary-large,
   .btn-secondary-large {
-    padding: 10px 20px;
-    font-size: 1.1rem;
-    width: auto; /* Auto width */
-    flex: 1 1 150px; /* Grow and shrink, min 150px */
+    padding: 10px 30px;
+    font-size: 1.2rem;
+    width: 100%;
+    max-width: 350px;
+    flex: none; /* Disable flex-grow from previous row layout */
   }
 
   .challenge-option {
-    width: auto;
-    flex: 1 1 150px;
+    width: 100%;
+    max-width: 350px;
+    flex: none;
   }
 
   .btn-info-large {
