@@ -147,6 +147,17 @@
 
       <main>
         <div class="sidebar">
+          <!-- Challenge HUD (Moved to Sidebar) -->
+          <div id="challenge-hud" class="hidden">
+            <div class="hud-item">
+              <span class="label">得分：</span>
+              <span id="score-val">0</span> / <span id="total-val">0</span>
+            </div>
+            <div class="hud-item">
+              <span id="question-text">請連接電路...</span>
+            </div>
+          </div>
+
           <h2>元件箱</h2>
           <div class="toolbox">
             <div class="component-item" draggable="true" data-type="battery">
@@ -296,17 +307,6 @@
             </div>
           </div>
 
-          <!-- Challenge HUD (Moved to Sidebar) -->
-          <div id="challenge-hud" class="hidden">
-            <div class="hud-item">
-              <span class="label">得分：</span>
-              <span id="score-val">0</span> / <span id="total-val">0</span>
-            </div>
-            <div class="hud-item">
-              <span class="label">題目：</span>
-              <span id="question-text">請連接電路...</span>
-            </div>
-          </div>
 
           <div class="sidebar-controls">
             <button id="verify-btn" class="btn success hidden">驗證答案</button>
