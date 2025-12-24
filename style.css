@@ -798,6 +798,7 @@ main {
 }
 
 .mistakes-container {
+  width: 100%;
   text-align: left;
   max-height: 300px;
   overflow-y: auto;
@@ -965,5 +966,64 @@ main {
     padding: 10px 20px;
     font-size: 1rem;
     margin-top: 10px;
+  }
+}
+
+/* ========================================= */
+/* Landscape Mobile Optimization             */
+/* ========================================= */
+@media (max-height: 600px) and (orientation: landscape) {
+  .container {
+    height: 100vh;
+    padding: 5px;
+  }
+
+  header {
+    display: none; /* Hide header to save space */
+  }
+
+  .panel {
+    padding: 1rem 2rem;
+    max-height: 95vh;
+    overflow-y: auto; /* Allow scrolling */
+    width: 80%;
+    max-width: 600px;
+  }
+
+  .start-panel h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .start-panel p {
+    margin-bottom: 0.5rem;
+  }
+
+  .mode-selection {
+    margin-top: 1rem;
+    gap: 10px;
+    flex-direction: row; /* Arrange buttons horizontally */
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .btn-primary-large,
+  .btn-secondary-large {
+    padding: 10px 20px;
+    font-size: 1.1rem;
+    width: auto; /* Auto width */
+    flex: 1 1 150px; /* Grow and shrink, min 150px */
+  }
+
+  .challenge-option {
+    width: auto;
+    flex: 1 1 150px;
+  }
+
+  .btn-info-large {
+    width: 100%;
+    padding: 8px;
+    font-size: 1rem;
+    margin-top: 5px;
   }
 }

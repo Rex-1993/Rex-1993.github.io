@@ -252,18 +252,22 @@ class Component {
       // Glow effect
       const brightness = Math.min(
         Math.abs(this.voltageDrop) / BATTERY_VOLTAGE,
-        2.0
+        10.0
       );
 
-      if (brightness > 0.1) {
+      if (brightness > 0.01) {
         // Outer Glow
+        let glowRadius = 40 + brightness * 20;
+        if (brightness >= 3.0) glowRadius += 50; // Boost for >= 300%
+        if (brightness >= 6.0) glowRadius += 80; // Extra boost for >= 600%
+
         const gradient = ctx.createRadialGradient(
           0,
           -15,
           10,
           0,
           -15,
-          40 + brightness * 20
+          glowRadius
         );
         gradient.addColorStop(
           0,
@@ -272,14 +276,14 @@ class Component {
         gradient.addColorStop(1, "rgba(255, 255, 0, 0)");
         ctx.fillStyle = gradient;
         ctx.beginPath();
-        ctx.arc(0, -15, 50, 0, Math.PI * 2);
+        ctx.arc(0, -15, glowRadius + 10, 0, Math.PI * 2); // Ensure fill covers radius
         ctx.fill();
       }
 
       // Bulb Glass
       ctx.beginPath();
       ctx.arc(0, -15, 22, 0, Math.PI * 2);
-      ctx.fillStyle = brightness > 0.1 ? "#ffface" : "#ecf0f1";
+      ctx.fillStyle = brightness > 0.01 ? "#ffface" : "#ecf0f1";
       ctx.fill();
       ctx.strokeStyle = "#bdc3c7";
       ctx.lineWidth = 1;
@@ -2359,6 +2363,7 @@ const menuR = document.getElementById("menu-resistance");
 const menuV = document.getElementById("menu-voltage");
 const menuI = document.getElementById("menu-current");
 const menuRPM = document.getElementById("menu-rpm");
+const menuBrightness = document.getElementById("menu-brightness");
 const menuDelete = document.getElementById("menu-delete");
 
 // Delete Action
@@ -2412,6 +2417,7 @@ canvas.addEventListener("contextmenu", (e) => {
     menuV.classList.remove("hidden");
     menuI.classList.remove("hidden");
     menuRPM.classList.add("hidden"); // specific
+    menuBrightness.classList.add("hidden");
 
     // Check type
     if (target.from) {
@@ -2461,6 +2467,14 @@ canvas.addEventListener("contextmenu", (e) => {
         menuRPM.classList.remove("hidden");
         const rpm = Math.round(v * 30);
         menuRPM.textContent = `轉速: ${rpm} rpm`;
+      }
+      
+      // 5. Bulb Brightness
+      if (target.type === "bulb") {
+        menuBrightness.classList.remove("hidden");
+        const v = Math.abs(target.voltageDrop);
+        const pct = Math.round((v / 1.5) * 100);
+        menuBrightness.textContent = `亮度: ${pct}%`;
       }
     }
 
