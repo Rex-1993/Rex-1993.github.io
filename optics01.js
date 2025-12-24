@@ -516,6 +516,8 @@ function loop() {
 
 // Touch State
 let dragStartTime = 0;
+let longPressTimer = null;
+const LONG_PRESS_DURATION = 800; // 0.8s
 
 function getEventPos(e) {
   const rect = canvas.getBoundingClientRect();
@@ -579,6 +581,15 @@ function handleStart(e) {
     // Move to top
     components = components.filter((c) => c !== clicked);
     components.push(clicked);
+
+    // Start Long Press Timer
+    if (longPressTimer) clearTimeout(longPressTimer);
+    longPressTimer = setTimeout(() => {
+        isDragging = false;
+        draggedComponent = null;
+        showContextMenu(clicked, pos.x, pos.y);
+    }, LONG_PRESS_DURATION);
+
   } else {
     hideContextMenu();
   }
@@ -588,8 +599,14 @@ function handleMove(e) {
   e.preventDefault();
   const pos = getEventPos(e);
 
+  // Use dragStartPosition defined in scope
+  const dist = Math.hypot(pos.x - dragStartPosition.x, pos.y - dragStartPosition.y);
+  if (longPressTimer && dist > 10) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+  }
+
   if (isDragging && draggedComponent) {
-    // Calculate snap or constraints if needed? Nah, free move.
     draggedComponent.x = pos.x - dragOffset.x;
     draggedComponent.y = pos.y - dragOffset.y;
   } else {
@@ -610,6 +627,11 @@ function handleMove(e) {
 }
 
 function handleEnd(e) {
+  if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
+  }
+  
   isDragging = false;
   draggedComponent = null;
   canvas.style.cursor = "default";
@@ -649,11 +671,6 @@ function handleEnd(e) {
            // Do nothing/Shake?
        } else {
            clicked.rotation += Math.PI / 4; // 45 degrees
-           
-           // If Laser, toggle? NO, user asked for rotate on tap.
-           // Maybe separate button or double tap for toggle? 
-           // Standard behavior: rotate.
-           // Special case: Mirror lock, etc.
            
            if (clicked.type === 'laser') {
                // Lasers might also toggle on tap?
@@ -789,24 +806,31 @@ canvas.addEventListener("contextmenu", (e) => {
     .find((c) => isPointInPoly(pos, c.getCorners()));
 
   if (comp) {
-    contextMenuTarget = comp;
-    contextMenu.style.left = pos.x + "px"; // Relative to workspace? contextmenu is absolute?
-    // Note: Context menu CSS needs position: absolute inside relative container or page.
-    // Usually event.clientX is better if fixed.
-    // Let's use logic from magnet01, assuming it works there.
-    // magnet01 uses pos.x (canvas relative) but menu is in workspace-container.
-    contextMenu.style.left = pos.x + "px";
-    contextMenu.style.top = pos.y + "px";
-    contextMenu.classList.remove("hidden");
-
-    // Convert rad to deg [0-360]
-    let deg = ((comp.rotation * 180) / Math.PI) % 360;
-    if (deg < 0) deg += 360;
-    menuAngle.textContent = `角度: ${Math.round(deg)}°`;
-  } else {
-    hideContextMenu();
+    showContextMenu(comp, pos.x, pos.y);
   }
 });
+
+function showContextMenu(comp, x, y) {
+    contextMenuTarget = comp;
+    contextMenu.style.left = x + "px";
+    contextMenu.style.top = y + "px";
+    contextMenu.classList.remove("hidden");
+    
+    // Update Menu Content
+    if (comp.rotation !== undefined) {
+        const deg = Math.round((comp.rotation * 180) / Math.PI) % 360;
+        menuAngle.textContent = `角度: ${deg}°`;
+    }
+    
+    // Disable delete if locked
+    if (gameMode === "challenge" && comp.isLocked) {
+        menuDelete.classList.add("hidden");
+    } else {
+        menuDelete.classList.remove("hidden");
+    }
+}
+
+
 
 // ---------------------------------------------------------
 // Challenge Logic

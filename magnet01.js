@@ -885,7 +885,8 @@ function loop() {
 
 // Touch State
 let dragStartTime = 0;
-let dragStartPosition = { x: 0, y: 0 };
+let longPressTimer = null;
+const LONG_PRESS_DURATION = 800; // 0.8 seconds
 
 function getEventPos(e) {
   const rect = canvas.getBoundingClientRect();
@@ -920,31 +921,41 @@ canvas.addEventListener("mousemove", handleMove);
 canvas.addEventListener("touchmove", handleMove, { passive: false });
 canvas.addEventListener("mouseup", handleEnd);
 canvas.addEventListener("touchend", handleEnd);
+// canvas.addEventListener("contextmenu", ... ); // Already defined below
 
 function handleStart(e) {
-  e.preventDefault(); // Prevent scrolling on touch
+  e.preventDefault();
   const pos = getEventPos(e);
-  dragStartPosition = { ...pos };
-  dragStartTime = Date.now();
+  dragOffset = { x: 0, y: 0 }; // Reset
+  
+  // Right click handled natively by contextmenu event, but we can also catch it here if we want custom logic
+  if (e.button === 2) return; 
 
-  // Right click handled elsewhere
-  if (e.button === 2) return;
-
-  // Hit Test (Reverse order for "Top" first)
   const clicked = components
     .slice()
     .reverse()
     .find((c) => isPointInPoly(pos, c.getCorners()));
 
   if (clicked) {
+    dragStartTime = Date.now();
+    dragStartPosition = { ...pos };
     isDragging = true;
     draggedComponent = clicked;
-    // Keep offset to avoid snapping center to mouse
     dragOffset = { x: pos.x - clicked.x, y: pos.y - clicked.y };
 
     // Move to top
     components = components.filter((c) => c !== clicked);
     components.push(clicked);
+    
+    // Start Long Press Timer
+    if (longPressTimer) clearTimeout(longPressTimer);
+    longPressTimer = setTimeout(() => {
+        // Long press triggered!
+        isDragging = false; // Cancel drag
+        draggedComponent = null;
+        showContextMenu(clicked, pos.x, pos.y);
+    }, LONG_PRESS_DURATION);
+
   } else {
     hideContextMenu();
   }
@@ -954,45 +965,53 @@ function handleMove(e) {
   e.preventDefault();
   const pos = getEventPos(e);
 
+  // If moved significantly, cancel long press
+  if (longPressTimer && isDragging) {
+      const dist = Math.hypot(pos.x - dragStartPosition.x, pos.y - dragStartPosition.y);
+      if (dist > 10) {
+          clearTimeout(longPressTimer);
+          longPressTimer = null;
+      }
+  }
+
   if (isDragging && draggedComponent) {
-    draggedComponent.isStatic = false; // It physically moves, but we override pos
     draggedComponent.x = pos.x - dragOffset.x;
     draggedComponent.y = pos.y - dragOffset.y;
-    
-    // Reset velocity while dragging to avoid flying off
     draggedComponent.vx = 0;
     draggedComponent.vy = 0;
   } else {
-    // Hover cursor logic
-    const hover = components
+      // Hover effect logic
+      const hover = components
       .slice()
       .reverse()
       .find((c) => isPointInPoly(pos, c.getCorners()));
-    if (hover) {
-      canvas.style.cursor = "grab";
-    } else {
-      canvas.style.cursor = "default";
-    }
+      canvas.style.cursor = hover ? "grab" : "default";
   }
 }
 
 function handleEnd(e) {
-  // If dragging
-  if (isDragging) {
-    isDragging = false;
-    draggedComponent = null;
-    canvas.style.cursor = "default";
+  // Cancel long press if it hasn't fired yet
+  if (longPressTimer) {
+      clearTimeout(longPressTimer);
+      longPressTimer = null;
   }
 
-  // Tap to Rotate Detection
-  // Check if it was a short tap with little movement
-  // Note: 'touchend' event doesn't have touches[0], use changedTouches if needed, 
-  // but we use stored start pos and check if we are still effectively there?
-  // Actually, simplest is just checking time and if we DIDNT drag far.
+  isDragging = false;
   
+  if (draggedComponent) {
+      draggedComponent.isStatic = false; // Physics resumes
+      draggedComponent = null;
+  }
+  
+  canvas.style.cursor = "default";
+
+  // Tap Detection logic (if needed for rotation etc)
   const timeDiff = Date.now() - dragStartTime;
+  // ... existing tap logic ...
+  // Note: We might want to separate tap logic if it conflicts with long press, 
+  // but since long press cancels itself on move/up, standard click is fine.
   
-  // For mouseup e.clientX works. For touchend we need changedTouches.
+  // Determine end position for click detection
   let clientX, clientY;
   if (e.changedTouches && e.changedTouches.length > 0) {
       clientX = e.changedTouches[0].clientX;
@@ -1001,21 +1020,20 @@ function handleEnd(e) {
       clientX = e.clientX;
       clientY = e.clientY;
   }
-  
   const rect = canvas.getBoundingClientRect();
   const endX = clientX - rect.left;
   const endY = clientY - rect.top;
-  
   const dist = Math.hypot(endX - dragStartPosition.x, endY - dragStartPosition.y);
-  
+
   if (timeDiff < 300 && dist < 10) {
-      // Valid Tap!
-      // Check what we tapped on (using Start Position is safer as End interaction might drift slightly)
-      const tappedStart = components.slice().reverse().find(c => isPointInPoly(dragStartPosition, c.getCorners()));
-      
-      if (tappedStart) {
-          // TAP DETECTED ON COMPONENT -> ROTATE
-          tappedStart.rotation += Math.PI / 4; // 45 degrees
+      // It's a tap
+      const clicked = components
+        .slice()
+        .reverse()
+        .find((c) => isPointInPoly(dragStartPosition, c.getCorners()));
+       
+      if (clicked) {
+          clicked.rotation += Math.PI / 4;
       }
   }
 }

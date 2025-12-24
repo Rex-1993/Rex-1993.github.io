@@ -275,7 +275,7 @@ main {
   /* Prevent selection in workspace */
   user-select: none;
   touch-action: none;
-  
+
   /* Flex Layout for HUD + Canvas Stacking */
   display: flex;
   flex-direction: column;
@@ -426,7 +426,7 @@ main {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     /* Extra padding at bottom to prevent cutoff by browser bars */
-    padding-bottom: calc(20px + env(safe-area-inset-bottom, 10px)); 
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 10px));
   }
 
   .btn {
@@ -736,44 +736,45 @@ main {
 
 /* Specific layout for Score row */
 #challenge-hud .hud-item:first-child {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px dashed #eee;
-    padding-bottom: 10px;
-    margin-bottom: 5px;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed #eee;
+  padding-bottom: 10px;
+  margin-bottom: 5px;
 }
 
 .hud-item .label {
-    background-color: #3498db;
-    color: white;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.9rem;
-    font-weight: bold;
-    display: inline-block;
-    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+  background-color: #3498db;
+  color: white;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: bold;
+  display: inline-block;
+  box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
 }
 
 #question-text {
-    background-color: #f8f9fa;
-    border: 1px solid #e9ecef;
-    border-left: 5px solid #e74c3c; /* Red accent for visibility */
-    border-radius: 6px;
-    padding: 12px;
-    color: #2c3e50;
-    font-size: 1rem;
-    line-height: 1.5;
-    width: 100%;
-    box-sizing: border-box;
-    min-height: 60px; /* Ensure space for multi-line */
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-left: 5px solid #e74c3c; /* Red accent for visibility */
+  border-radius: 6px;
+  padding: 12px;
+  color: #2c3e50;
+  font-size: 1rem;
+  line-height: 1.5;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 60px; /* Ensure space for multi-line */
 }
 
-#score-val, #total-val {
-    font-size: 1.4rem;
-    font-weight: 800;
-    color: #2c3e50;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+#score-val,
+#total-val {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #2c3e50;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
 }
 
 #circuit-canvas {
@@ -1063,7 +1064,7 @@ main {
   .component-item {
     padding: 8px;
   }
-  
+
   .component-item span {
     display: block;
     font-size: 0.75rem;
@@ -1235,6 +1236,10 @@ main {
   font-weight: bold;
   color: #2c3e50;
   width: 100%;
+}
+
+.optics-hud .hud-item {
+  flex-direction: row;
 }
 
 .progress-bar-container {
