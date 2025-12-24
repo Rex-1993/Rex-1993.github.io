@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>國小自然科學 - 遊戲學習平台</title>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --accent-color: #f1c40f;
+            --bg-color: #f0f4f8;
+            --text-color: #2c3e50;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        header {
+            background: linear-gradient(135deg, #6dd5fa 0%, #2980b9 100%);
+            color: white;
+            width: 100%;
+            padding: 3rem 0;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        h1 {
+            margin: 0;
+            font-size: 3rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+            letter-spacing: 2px;
+        }
+        .subtitle {
+            margin-top: 1rem;
+            font-size: 1.5rem;
+            opacity: 0.9;
+        }
+        main {
+            padding: 2rem;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 2rem;
+            flex: 1;
+        }
+        .game-card {
+            background: white;
+            border-radius: 20px;
+            width: 320px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            border: 2px solid transparent;
+        }
+        .game-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            border-color: var(--primary-color);
+        }
+        .card-image {
+            height: 200px;
+            background: linear-gradient(135deg, #9b59b6 0%, #2980b9 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            color: white;
+            text-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .card-content {
+            padding: 2rem;
+        }
+        .card-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: var(--primary-color);
+        }
+        .card-desc {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            line-height: 1.6;
+        }
+        .lock-icon {
+            font-size: 3rem;
+            opacity: 0.5;
+        }
+        footer {
+            width: 100%;
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            text-align: center;
+            padding: 1.5rem;
+            font-size: 1rem;
+            margin-top: 3rem;
+        }
+
+        /* Morandi Gradients for Cards - Enhanced Contrast */
+        .card-image.electric {
+            /* Deep Blue-Grey to Pale Sky */
+             background: linear-gradient(135deg, #4b6cb7 0%, #b8d9e9 100%);
+        }
+        .card-image.magnet {
+            /* Deep Forest Sage to Pale Mint */
+            background: linear-gradient(135deg, #517c63 0%, #d3e4dc 100%);
+        }
+        .card-image.optics {
+            /* Deep Rust/Clay to Pale Peach */
+             background: linear-gradient(135deg, #a65f52 0%, #f7e6e3 100%);
+        }
+        .card-image.locked {
+            background: linear-gradient(135deg, #7f8c8d 0%, #bdc3c7 100%);
+        }
+
+        /* Text shadow adjustment for lighter backgrounds */
+        .card-image {
+            text-shadow: 0 4px 10px rgba(0,0,0,0.15); /* Re-add soft shadow for depth */
+            color: white; 
+        }
+
+        /* --- Responsive Design --- */
+
+        /* Tablet and below */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.2rem; }
+            .subtitle { font-size: 1.2rem; }
+            header { padding: 2rem 0; }
+            main { padding: 1rem; gap: 1.5rem; }
+            .game-card { width: 45%; min-width: 280px; }
+        }
+
+        /* Mobile Phone (Portrait) */
+        @media (max-width: 480px) {
+            h1 { font-size: 1.8rem; }
+            header { padding: 1.5rem 0; margin-bottom: 1rem; }
+            main { padding: 0.8rem; gap: 1rem; }
+            .game-card { width: 100%; max-width: 320px; }
+            .card-image { height: 160px; font-size: 4rem; }
+            .card-title { font-size: 1.5rem; }
+            .card-desc { font-size: 1rem; }
+        }
+
+        /* Landscape Optimization (Mobile) */
+        @media (orientation: landscape) and (max-height: 500px) {
+            header { 
+                padding: 1rem 0; 
+                margin-bottom: 0.5rem; 
+                display: flex; 
+                justify-content: center; 
+                align-items: center; 
+                gap: 1rem; 
+            }
+            h1 { font-size: 1.5rem; }
+            .subtitle { font-size: 1rem; margin-top: 0; }
+            main { padding: 0.5rem; gap: 1rem; }
+            .game-card { width: 280px; flex-direction: row; height: 120px; }
+            .card-image { width: 100px; height: 100%; font-size: 2.5rem; }
+            .card-content { padding: 0.8rem; justify-content: center; }
+            .card-title { font-size: 1.1rem; margin-bottom: 0.2rem; }
+            .card-desc { display: none; } /* Hide desc on tight landscape */
+        }
+    </style>
+    <meta name="theme-color" content="#4A90E2">
+    <link rel="manifest" href="manifest.json">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(registration => console.log('SW registered'))
+            .catch(err => console.log('SW registration failed: ', err));
+        });
+      }
+    </script>
+</head>
+<body>
+    <header>
+        <h1>國小自然科學</h1>
+        <div class="subtitle">快樂學習自然科學知識 ✨</div>
+    </header>
+    
+    <main>
+        <!-- Card 1: Circuit Game -->
+        <a href="electric01.html" class="game-card">
+            <div class="card-image electric">⚡</div>
+            <div class="card-content">
+                <div class="card-title">小小電路科學家</div>
+                <div class="card-desc">
+                    認識電路的基本組成！<br>
+                    學習電池、燈泡、馬達與開關的連接，探索串聯與並聯的奧秘。
+                </div>
+            </div>
+        </a>
+        
+        <!-- Card 2: Magnet Game -->
+        <a href="magnet01.html" class="game-card">
+            <div class="card-image magnet">
+                🧲
+            </div>
+            <div class="card-content">
+                <div class="card-title">小小磁鐵科學家</div>
+                <div class="card-desc">
+                    探索磁鐵的奧秘！<br>
+                    學習磁極、磁力，並實驗哪些物品會被磁鐵吸引。
+                </div>
+            </div>
+        </a>
+
+        <!-- Card 3: Optics Game -->
+        <a href="optics01.html" class="game-card">
+            <div class="card-image optics">
+                🔦
+            </div>
+            <div class="card-content">
+                <div class="card-title">小小光學科學家</div>
+                <div class="card-desc">
+                    探索光的奧秘！<br>
+                    使用雷射筆、鏡子和障礙物，觀察光線的反射與折射路徑。
+                </div>
+            </div>
+        </a>
+
+        <!-- Placeholder for future games -->
+        <div class="game-card" style="cursor: default;">
+            <div class="card-image locked">
+                🔒
+            </div>
+            <div class="card-content">
+                <div class="card-title" style="color: #7f8c8d;">更多遊戲敬請期待</div>
+                <div class="card-desc">
+                    更多有趣的自然科學互動單元開發中<br>
+                    (聲音、力學...)
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        &copy; Rex 國小自然科學學習平台 | 讓科學更有趣
+    </footer>
+</body>
+</html>

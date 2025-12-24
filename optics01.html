@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>小小光學科學家</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#4facfe" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <meta name="theme-color" content="#4A90E2">
+    <link rel="manifest" href="manifest.json">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(registration => console.log('SW registered'))
+            .catch(err => console.log('SW registration failed: ', err));
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Start Screen Overlay -->
+      <div id="start-screen" class="overlay hidden">
+        <div class="panel start-panel">
+          <h1>小小光學科學家</h1>
+          <p>探索光的奧秘，使用透鏡和反射鏡！</p>
+          <div class="mode-selection">
+            <button id="btn-normal-mode" class="btn-primary-large">
+              自由探索模式
+            </button>
+            <button id="btn-challenge-mode" class="btn-secondary-large">
+              挑戰模式
+            </button>
+            <button id="btn-open-instructions" class="btn-info-large">
+              操作說明
+            </button>
+            <a href="index.html" class="btn-home-large"> 回到主頁 </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions Modal (Hidden by default) -->
+      <div id="instructions-screen" class="overlay hidden">
+        <div class="panel instructions-panel">
+          <h2>📖 操作說明</h2>
+          <div class="instructions-content">
+            <h3>基本操作</h3>
+            <ul>
+              <li>
+                <strong>拖曳物品：</strong
+                >從左側工具箱將雷射筆、鏡子等物品拖曳到工作區上。
+              </li>
+              <li><strong>觀察現象：</strong>打開雷射筆，看看光線如何反射！</li>
+              <li><strong>旋轉物品：</strong>點擊工作區上的物品可以旋轉它。</li>
+              <li>
+                <strong>刪除物品：</strong
+                >對著物品按右鍵（或手機長按）可以刪除。
+              </li>
+            </ul>
+
+            <h3>小知識</h3>
+            <ul>
+              <li>
+                🔦
+                <strong>光的反射：</strong
+                >光線遇到鏡子會發生反射，入射角等於反射角喔！
+              </li>
+            </ul>
+
+            <h3>🏆 挑戰模式規則</h3>
+            <ul>
+              <li>
+                ❤️ <strong>生命值：</strong>您有 5 顆愛心，闖關失敗會扣血喔！
+              </li>
+              <li>
+                ⏱️ <strong>限時挑戰：</strong>每一題只有 30 秒的時間，動作要快！
+              </li>
+              <li>
+                🎯 <strong>目標：</strong>在時間內利用鏡子讓雷射射中目標靶。
+              </li>
+            </ul>
+          </div>
+          <button id="btn-close-instructions" class="btn primary">關閉</button>
+        </div>
+      </div>
+
+      <!-- Challenge Setup Modal -->
+      <div id="challenge-setup-modal" class="overlay hidden">
+        <div class="panel setup-panel">
+          <h2>挑戰設定</h2>
+          <div class="setup-content">
+            <div class="setup-row">
+              <label for="modal-challenge-count">選擇題數：</label>
+              <select id="modal-challenge-count">
+                <!-- Dynamically populated -->
+              </select>
+            </div>
+            
+            <div class="setup-row">
+              <label for="modal-challenge-time">每題時間：</label>
+              <select id="modal-challenge-time">
+                <option value="30">30 秒 (簡單)</option>
+                <option value="20" selected>20 秒 (普通)</option>
+                <option value="15">15 秒 (困難)</option>
+              </select>
+            </div>
+          </div>
+          <div class="setup-buttons">
+            <button id="btn-confirm-challenge" class="btn primary">
+              開始挑戰
+            </button>
+            <button id="btn-cancel-challenge" class="btn secondary">
+              取消
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Results Screen Overlay -->
+      <div id="results-screen" class="overlay hidden">
+        <div class="panel results-panel anim-pop">
+          <div class="victory-icon">🏆</div>
+          <h2>太棒了！</h2>
+          <p id="results-message">您已完成所有挑戰！</p>
+          <div class="results-stats">
+            <div class="stat-item">
+              <span class="stat-label">完成題數</span>
+              <span id="stat-count" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">挑戰設定</span>
+              <span id="stat-settings" class="stat-value" style="font-size: 1.1rem;">-</span>
+            </div>
+          </div>
+          <div class="results-buttons">
+            <button id="btn-restart" class="btn primary">再玩一次</button>
+            <a href="index.html" class="btn-home-large">回到首頁</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Generic Custom Modal -->
+      <div id="generic-modal" class="overlay hidden">
+        <div class="panel modal-panel">
+          <h2 id="modal-title">標題</h2>
+          <p id="modal-message">訊息內容</p>
+          <div class="modal-buttons">
+            <button id="modal-btn-confirm" class="btn primary">確定</button>
+            <button id="modal-btn-cancel" class="btn secondary hidden">
+              取消
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <header>
+        <h1>🔦 小小光學科學家 🌈</h1>
+        <p>拖曳雷射筆和鏡子，觀察光線的行進！</p>
+      </header>
+
+      <main>
+        <div class="sidebar">
+          <h2>工具箱</h2>
+          <div class="toolbox">
+            <div class="component-item" draggable="true" data-type="laser">
+              <div class="icon">🔦</div>
+              <span>雷射筆</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="mirror">
+              <div class="icon">🪞</div>
+              <span>平面鏡</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="block">
+              <div class="icon">🧱</div>
+              <span>障礙物</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="target">
+              <div class="icon">🎯</div>
+              <span>目標靶</span>
+            </div>
+          </div>
+
+          <!-- Challenge HUD -->
+          <div id="challenge-hud" class="hidden">
+            <div class="hud-item">
+              <span class="label">題目：</span>
+              <span id="current-question-num">1</span> /
+              <span id="total-questions-num">5</span>
+            </div>
+            <div class="hud-item">
+              <span class="label">進度：</span>
+              <div class="progress-bar-container">
+                <div id="challenge-progress-bar" class="progress-bar"></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sidebar-controls">
+            <button id="clear-btn" class="btn danger">清除全部</button>
+            <button id="home-btn" class="btn home">回到首頁</button>
+            <button id="sidebar-instructions-btn" class="btn info">
+              操作說明
+            </button>
+          </div>
+        </div>
+
+        <div class="workspace-container">
+          <canvas id="optics-canvas"></canvas>
+          <div id="status-display">目前狀態: 自由探索中...</div>
+
+          <!-- Challenge Stats Overlay -->
+          <div id="challenge-stats-overlay" class="hidden">
+            <div class="health-bar" id="health-bar">
+              <!-- Hearts will be generated here -->
+            </div>
+            <div class="timer-display" id="timer-display">⏱️ 30s</div>
+          </div>
+
+          <!-- Context Menu -->
+          <div id="context-menu" class="hidden">
+            <div class="menu-item">
+              <span id="menu-angle-info">角度: 0°</span>
+            </div>
+            <div
+              class="menu-item"
+              id="menu-delete"
+              style="
+                color: #e74c3c;
+                cursor: pointer;
+                font-weight: bold;
+                border-top: 1px solid #eee;
+              "
+            >
+              🗑️ 刪除物品
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Audio Effects -->
+    <audio
+      id="snd-click"
+      src="https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3"
+    ></audio>
+    <audio
+      id="snd-victory"
+      src="https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3"
+    ></audio>
+    <audio
+      id="snd-success"
+      src="https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"
+    ></audio>
+    <audio
+      id="snd-fail"
+      src="https://assets.mixkit.co/active_storage/sfx/731/731-preview.mp3"
+    ></audio>
+
+    <script src="optics01.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("./sw.js")
+          .then(() => console.log("Service Worker Registered"))
+          .catch((err) => console.log("SW Failed", err));
+      }
+    </script>
+  </body>
+</html>

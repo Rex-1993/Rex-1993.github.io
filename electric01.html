@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>小小電路科學家</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#4facfe" />
+    <link rel="apple-touch-icon" href="icon.svg" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <meta name="theme-color" content="#4A90E2">
+    <link rel="manifest" href="manifest.json">
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(registration => console.log('SW registered'))
+            .catch(err => console.log('SW registration failed: ', err));
+        });
+      }
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Start Screen Overlay -->
+      <div id="start-screen" class="overlay">
+        <div class="panel start-panel">
+          <h1>小小電路科學家</h1>
+          <p>探索電路的奧秘，或是挑戰你的知識！</p>
+          <div class="mode-selection">
+            <button id="btn-normal-mode" class="btn-primary-large">
+              自由探索模式
+            </button>
+            <button id="btn-challenge-mode" class="btn-secondary-large">
+              挑戰模式
+            </button>
+            <button id="btn-open-instructions" class="btn-info-large">
+              操作說明
+            </button>
+            <a href="index.html" class="btn-home-large"> 回到主頁 </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Challenge HUD moved to workspace -->
+
+      <div id="results-screen" class="overlay hidden">
+        <div class="panel results-panel">
+          <div class="results-summary">
+            <h2>挑戰完成！</h2>
+            <div class="final-score">
+              總分: <span id="final-score-val">0</span>
+            </div>
+            <button id="btn-restart" class="btn primary">回到主選單</button>
+          </div>
+
+          <div class="results-details">
+            <!-- Weakness Analysis -->
+            <div id="weakness-report" class="weakness-container hidden">
+              <h3>📊 弱點分析</h3>
+              <div id="weakness-list"></div>
+            </div>
+
+            <div id="mistakes-list" class="mistakes-container"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Challenge Setup Modal -->
+      <div id="challenge-setup-modal" class="overlay hidden">
+        <div class="panel setup-panel">
+          <h2>挑戰設定</h2>
+          <div class="setup-content">
+            <label for="modal-challenge-count">題目數量:</label>
+            <select id="modal-challenge-count">
+              <!-- JS will populate 1-20 -->
+            </select>
+          </div>
+          <div class="setup-buttons">
+            <button id="btn-confirm-challenge" class="btn primary">開始挑戰</button>
+            <button id="btn-cancel-challenge" class="btn secondary">取消</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions Modal (Hidden by default) -->
+      <div id="instructions-screen" class="overlay hidden">
+        <div class="panel instructions-panel">
+          <h2>📖 操作說明</h2>
+          <div class="instructions-content">
+            <h3>基本操作</h3>
+            <ul>
+              <li>
+                <strong>拖曳元件：</strong
+                >從元件箱將電池、燈泡等元件拖曳到工作區。
+              </li>
+              <li>
+                <strong>連接電線：</strong
+                >點擊元件的一個接點，然後點擊另一個元件的接點來連接電線。
+              </li>
+              <li>
+                <strong>旋轉元件：</strong>點擊畫布上的元件可以旋轉它（順時針轉
+                90 度）。
+              </li>
+              <li>
+                <strong>刪除元件或電線：</strong
+                >對著元件或電線按右鍵（或觸控長按）選擇刪除元件。
+              </li>
+              <li><strong>右鍵選單：</strong>可以檢視元件詳細資訊。</li>
+            </ul>
+
+            <h3>注意事項</h3>
+            <ul>
+              <li>
+                ⚠️
+                <strong>短路警告：</strong
+                >如果電池的正負極直接相連而沒有經過負載（如燈泡），會造成短路！
+              </li>
+            </ul>
+          </div>
+          <button id="btn-close-instructions" class="btn-primary">關閉</button>
+        </div>
+      </div>
+
+      <!-- Generic Custom Modal -->
+      <div id="generic-modal" class="overlay hidden">
+        <div class="panel modal-panel">
+          <h2 id="modal-title">標題</h2>
+          <p id="modal-message">訊息內容</p>
+          <div class="modal-buttons">
+            <button id="modal-btn-confirm" class="btn primary">確定</button>
+            <button id="modal-btn-cancel" class="btn secondary hidden">取消</button>
+          </div>
+        </div>
+      </div>
+      <header>
+        <h1>💡 小小電路科學家 🔋</h1>
+        <p>拖曳電池和燈泡，把它們連起來看看會發生什麼事吧！</p>
+      </header>
+
+      <main>
+        <div class="sidebar">
+          <h2>元件箱</h2>
+          <div class="toolbox">
+            <div class="component-item" draggable="true" data-type="battery">
+              <div class="icon battery-icon">🔋</div>
+              <span>電池 (1.5V)</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="bulb">
+              <div class="icon bulb-icon">💡</div>
+              <span>燈泡</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="motor">
+              <div class="icon motor-icon">⚙️</div>
+              <span>馬達</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="switch">
+              <div class="icon switch-icon">
+                <svg
+                  width="40"
+                  height="40"
+                  viewBox="0 0 100 100"
+                  style="overflow: visible"
+                >
+                  <circle cx="20" cy="80" r="10" fill="#95a5a6" />
+                  <circle cx="80" cy="80" r="10" fill="#95a5a6" />
+                  <line
+                    x1="20"
+                    y1="80"
+                    x2="70"
+                    y2="30"
+                    stroke="#f39c12"
+                    stroke-width="8"
+                    stroke-linecap="round"
+                  />
+                  <rect
+                    x="65"
+                    y="25"
+                    width="10"
+                    height="20"
+                    fill="#e74c3c"
+                    transform="rotate(-45 70 30)"
+                  />
+                </svg>
+              </div>
+              <span>開關</span>
+            </div>
+            <!-- New Components -->
+            <div class="component-item" draggable="true" data-type="paperclip">
+              <div class="icon">📎</div>
+              <span>迴紋針</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="eraser">
+              <div class="icon">🧼</div>
+              <span>橡皮擦</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="coin">
+              <div class="icon">🪙</div>
+              <span>硬幣</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="lego">
+              <div class="icon">
+                <svg
+                  width="40"
+                  height="40"
+                  viewBox="0 0 100 100"
+                  style="overflow: visible"
+                >
+                  <!-- Red Body -->
+                  <rect
+                    x="15"
+                    y="25"
+                    width="70"
+                    height="50"
+                    rx="2"
+                    fill="#e74c3c"
+                    stroke="#c0392b"
+                    stroke-width="2"
+                  />
+                  <!-- Studs (2x4) -->
+                  <circle
+                    cx="26"
+                    cy="38"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                  <circle
+                    cx="42"
+                    cy="38"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                  <circle
+                    cx="58"
+                    cy="38"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                  <circle
+                    cx="74"
+                    cy="38"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+
+                  <circle
+                    cx="26"
+                    cy="62"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                  <circle
+                    cx="42"
+                    cy="62"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                  <circle
+                    cx="58"
+                    cy="62"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                  <circle
+                    cx="74"
+                    cy="62"
+                    r="6"
+                    fill="#c0392b"
+                    stroke="#e74c3c"
+                    stroke-width="1"
+                  />
+                </svg>
+              </div>
+              <span>積木</span>
+            </div>
+          </div>
+
+          <div class="sidebar-controls">
+            <button id="verify-btn" class="btn success hidden">驗證答案</button>
+            <button id="clear-btn" class="btn danger">清除全部</button>
+            <button id="home-btn" class="btn home">回到首頁</button>
+            <button id="sidebar-instructions-btn" class="btn info">
+              操作說明
+            </button>
+          </div>
+        </div>
+
+        <div class="workspace-container">
+          <!-- Challenge HUD (Integrated into background) -->
+          <div id="challenge-hud" class="hidden">
+            <div class="hud-score">
+              得分: <span id="score-val">0</span> /
+              <span id="total-val">0</span>
+            </div>
+            <div class="hud-question">
+              題目: <span id="question-text">請連接電路...</span>
+            </div>
+          </div>
+
+          <canvas id="circuit-canvas"></canvas>
+          <div id="short-warning" class="warning-banner hidden">
+            ⚠️ 短路警告！電池過熱危險！
+          </div>
+          <div id="status-display">目前狀態: 等待連接...</div>
+
+          <!-- Context Menu -->
+          <div id="context-menu" class="hidden">
+            <div class="menu-item" id="menu-resistance">電阻: --</div>
+            <div class="menu-item" id="menu-voltage">跨壓: --</div>
+            <div class="menu-item" id="menu-current">電流: --</div>
+            <div class="menu-item hidden" id="menu-brightness">亮度: --</div>
+            <div class="menu-item hidden" id="menu-rpm">轉速: --</div>
+            <div
+              class="menu-item"
+              id="menu-delete"
+              style="
+                color: #e74c3c;
+                cursor: pointer;
+                font-weight: bold;
+                border-top: 1px solid #eee;
+              "
+            >
+              🗑️ 刪除元件
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script src="electric01.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("./sw.js")
+          .then(() => console.log("Service Worker Registered"))
+          .catch((err) => console.log("SW Failed", err));
+      }
+    </script>
+  </body>
+</html>
