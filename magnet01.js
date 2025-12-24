@@ -878,9 +878,15 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
+
 // ---------------------------------------------------------
-// Interaction Logic (Updated for arbitrary rotation)
+// Interaction Logic
 // ---------------------------------------------------------
+
+// Touch State
+let dragStartTime = 0;
+let dragStartPosition = { x: 0, y: 0 };
+
 function getEventPos(e) {
   const rect = canvas.getBoundingClientRect();
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -891,6 +897,23 @@ function getEventPos(e) {
   };
 }
 
+// Check point in polygon (Ray casting algorithm)
+function isPointInPoly(pt, poly) {
+  let inside = false;
+  for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+    const xi = poly[i].x,
+      yi = poly[i].y;
+    const xj = poly[j].x,
+      yj = poly[j].y;
+
+    const intersect =
+      yi > pt.y != yj > pt.y &&
+      pt.x < ((xj - xi) * (pt.y - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
+}
+
 canvas.addEventListener("mousedown", handleStart);
 canvas.addEventListener("touchstart", handleStart, { passive: false });
 canvas.addEventListener("mousemove", handleMove);
@@ -899,25 +922,31 @@ canvas.addEventListener("mouseup", handleEnd);
 canvas.addEventListener("touchend", handleEnd);
 
 function handleStart(e) {
-  e.preventDefault();
+  e.preventDefault(); // Prevent scrolling on touch
+  const pos = getEventPos(e);
+  dragStartPosition = { ...pos };
+  dragStartTime = Date.now();
+
+  // Right click handled elsewhere
   if (e.button === 2) return;
 
-  const pos = getEventPos(e);
-  
-  // Hit Test with OBB
-  const clicked = components.slice().reverse().find(c => isPointInPoly(pos, c.getCorners()));
+  // Hit Test (Reverse order for "Top" first)
+  const clicked = components
+    .slice()
+    .reverse()
+    .find((c) => isPointInPoly(pos, c.getCorners()));
 
   if (clicked) {
-      isDragging = true;
-      draggedComponent = clicked;
-      clicked.isStatic = true;
-      dragOffset = { x: pos.x - clicked.x, y: pos.y - clicked.y };
-      
-      // Move to top
-      components = components.filter(c => c !== clicked);
-      components.push(clicked);
+    isDragging = true;
+    draggedComponent = clicked;
+    // Keep offset to avoid snapping center to mouse
+    dragOffset = { x: pos.x - clicked.x, y: pos.y - clicked.y };
+
+    // Move to top
+    components = components.filter((c) => c !== clicked);
+    components.push(clicked);
   } else {
-      hideContextMenu();
+    hideContextMenu();
   }
 }
 
@@ -926,60 +955,74 @@ function handleMove(e) {
   const pos = getEventPos(e);
 
   if (isDragging && draggedComponent) {
-      draggedComponent.x = pos.x - dragOffset.x;
-      draggedComponent.y = pos.y - dragOffset.y;
-      draggedComponent.vx = 0;
-      draggedComponent.vy = 0;
+    draggedComponent.isStatic = false; // It physically moves, but we override pos
+    draggedComponent.x = pos.x - dragOffset.x;
+    draggedComponent.y = pos.y - dragOffset.y;
+    
+    // Reset velocity while dragging to avoid flying off
+    draggedComponent.vx = 0;
+    draggedComponent.vy = 0;
   } else {
-      // Hover Check
-      const hover = components.slice().reverse().find(c => isPointInPoly(pos, c.getCorners()));
-      canvas.style.cursor = hover ? "grab" : "default";
+    // Hover cursor logic
+    const hover = components
+      .slice()
+      .reverse()
+      .find((c) => isPointInPoly(pos, c.getCorners()));
+    if (hover) {
+      canvas.style.cursor = "grab";
+    } else {
+      canvas.style.cursor = "default";
+    }
   }
 }
 
 function handleEnd(e) {
-    if (isDragging && draggedComponent) {
-        draggedComponent.isStatic = false; // Release to physics
-        // Could infer velocity from drag history for throw effect
-    }
+  // If dragging
+  if (isDragging) {
     isDragging = false;
     draggedComponent = null;
-}
-
-// Check point in polygon (Ray casting algorithm)
-function isPointInPoly(pt, poly) {
-    let inside = false;
-    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-        const xi = poly[i].x, yi = poly[i].y;
-        const xj = poly[j].x, yj = poly[j].y;
-        
-        const intersect = ((yi > pt.y) != (yj > pt.y))
-            && (pt.x < (xj - xi) * (pt.y - yi) / (yj - yi) + xi);
-        if (intersect) inside = !inside;
-    }
-    return inside;
-}
-
-// ---------------------------------------------------------
-// Drag & Drop / UI (Existing kept mostly same)
-// ---------------------------------------------------------
-// Context Menu (Right Click)
-canvas.addEventListener("contextmenu", (e) => {
-  e.preventDefault();
-  const pos = getEventPos(e);
-  // OBB Hit Test
-  const comp = components.slice().reverse().find(c => isPointInPoly(pos, c.getCorners()));
-  
-  if (comp) {
-      showContextMenu(pos.x, pos.y, comp);
-      // Stop moving it if we right click
-      comp.vx = 0; comp.vy = 0; comp.angV = 0;
-  } else {
-      hideContextMenu();
+    canvas.style.cursor = "default";
   }
-});
 
+  // Tap to Rotate Detection
+  // Check if it was a short tap with little movement
+  // Note: 'touchend' event doesn't have touches[0], use changedTouches if needed, 
+  // but we use stored start pos and check if we are still effectively there?
+  // Actually, simplest is just checking time and if we DIDNT drag far.
+  
+  const timeDiff = Date.now() - dragStartTime;
+  
+  // For mouseup e.clientX works. For touchend we need changedTouches.
+  let clientX, clientY;
+  if (e.changedTouches && e.changedTouches.length > 0) {
+      clientX = e.changedTouches[0].clientX;
+      clientY = e.changedTouches[0].clientY;
+  } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+  }
+  
+  const rect = canvas.getBoundingClientRect();
+  const endX = clientX - rect.left;
+  const endY = clientY - rect.top;
+  
+  const dist = Math.hypot(endX - dragStartPosition.x, endY - dragStartPosition.y);
+  
+  if (timeDiff < 300 && dist < 10) {
+      // Valid Tap!
+      // Check what we tapped on (using Start Position is safer as End interaction might drift slightly)
+      const tappedStart = components.slice().reverse().find(c => isPointInPoly(dragStartPosition, c.getCorners()));
+      
+      if (tappedStart) {
+          // TAP DETECTED ON COMPONENT -> ROTATE
+          tappedStart.rotation += Math.PI / 4; // 45 degrees
+      }
+  }
+}
 
+// ---------------------------------------------------------
+// Drag & Drop (Toolbox) - Mouse
+// ---------------------------------------------------------
 const toolboxItems = document.querySelectorAll(".component-item");
 toolboxItems.forEach((item) => {
   item.addEventListener("dragstart", (e) => {
@@ -1001,7 +1044,89 @@ workspace.addEventListener("drop", (e) => {
   }
 });
 
+// ---------------------------------------------------------
+// Drag & Drop (Toolbox) - Touch Polyfill
+// ---------------------------------------------------------
+function initToolboxTouch() {
+  const items = document.querySelectorAll(".component-item");
+  let ghost = null;
+  let draggedType = null;
+  let touchOffsetX = 0;
+  let touchOffsetY = 0;
+
+  items.forEach((item) => {
+    item.addEventListener(
+      "touchstart",
+      (e) => {
+        if (e.touches.length > 1) return;
+        draggedType = item.dataset.type;
+        const touch = e.touches[0];
+        const rect = item.getBoundingClientRect();
+        touchOffsetX = touch.clientX - rect.left;
+        touchOffsetY = touch.clientY - rect.top;
+
+        // Create Ghost
+        ghost = item.cloneNode(true);
+        ghost.style.position = "absolute";
+        ghost.style.zIndex = "9999";
+        ghost.style.opacity = "0.8";
+        ghost.style.pointerEvents = "none";
+        ghost.style.left = rect.left + "px";
+        ghost.style.top = rect.top + "px";
+        ghost.style.width = rect.width + "px";
+        ghost.style.height = rect.height + "px";
+        document.body.appendChild(ghost);
+      },
+      { passive: false }
+    );
+
+    item.addEventListener(
+      "touchmove",
+      (e) => {
+        if (!ghost) return;
+        const touch = e.touches[0];
+        e.preventDefault(); // Prevent scroll
+        ghost.style.left = touch.clientX - touchOffsetX + "px";
+        ghost.style.top = touch.clientY - touchOffsetY + "px";
+      },
+      { passive: false }
+    );
+
+    item.addEventListener("touchend", (e) => {
+      if (!ghost) return;
+      const touch = e.changedTouches[0];
+      const clientX = touch.clientX;
+      const clientY = touch.clientY;
+      const canvasRect = canvas.getBoundingClientRect();
+
+      // Check if dropped inside canvas
+      if (
+        clientX >= canvasRect.left &&
+        clientX <= canvasRect.right &&
+        clientY >= canvasRect.top &&
+        clientY <= canvasRect.bottom
+      ) {
+        const x = clientX - canvasRect.left;
+        const y = clientY - canvasRect.top;
+
+        if (draggedType) {
+          components.push(new Component(draggedType, x, y));
+        }
+      }
+      
+      // Cleanup
+      if (ghost && ghost.parentNode) ghost.parentNode.removeChild(ghost);
+      ghost = null;
+      draggedType = null;
+    });
+  });
+}
+initToolboxTouch();
+
+
+// ---------------------------------------------------------
 // UI Helper Functions (Animations & Modals)
+// ---------------------------------------------------------
 function showModal(title, message, type = "info") {
   return new Promise((resolve) => {
     const modal = document.getElementById("generic-modal");

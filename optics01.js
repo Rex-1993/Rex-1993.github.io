@@ -509,9 +509,14 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
+
 // ---------------------------------------------------------
 // Interaction Logic
 // ---------------------------------------------------------
+
+// Touch State
+let dragStartTime = 0;
+
 function getEventPos(e) {
   const rect = canvas.getBoundingClientRect();
   const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -550,6 +555,7 @@ function handleStart(e) {
   e.preventDefault();
   const pos = getEventPos(e);
   dragStartPosition = { ...pos };
+  dragStartTime = Date.now();
 
   // Right click handled elsewhere
   if (e.button === 2) return;
@@ -607,30 +613,59 @@ function handleEnd(e) {
   isDragging = false;
   draggedComponent = null;
   canvas.style.cursor = "default";
-}
 
-canvas.addEventListener("click", (e) => {
-  // Click fires after mouseup.
-  // Check if we moved.
-  const pos = getEventPos(e);
-  const dist = Math.hypot(
-    pos.x - dragStartPosition.x,
-    pos.y - dragStartPosition.y
-  );
+  // Tap Detection (Robust for both Mouse and Touch)
+  const timeDiff = Date.now() - dragStartTime;
 
-  if (dist < 5) {
-    // Valid Click
+  // Need end coordinates. For mouseup e.clientX is fine. 
+  // For touchend, use changedTouches.
+  let clientX, clientY;
+  if (e.changedTouches && e.changedTouches.length > 0) {
+      clientX = e.changedTouches[0].clientX;
+      clientY = e.changedTouches[0].clientY;
+  } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+  }
+  
+  const rect = canvas.getBoundingClientRect();
+  const endX = clientX - rect.left;
+  const endY = clientY - rect.top;
+  
+  const dist = Math.hypot(endX - dragStartPosition.x, endY - dragStartPosition.y);
+
+  // If short time and small movement -> It's a TAP/CLICK
+  if (timeDiff < 300 && dist < 10) {
+    // Check what was tapped based on ORIGINAL start position (safest)
     const clicked = components
       .slice()
       .reverse()
-      .find((c) => isPointInPoly(pos, c.getCorners()));
+      .find((c) => isPointInPoly(dragStartPosition, c.getCorners()));
+      
     if (clicked) {
-      clicked.rotation += Math.PI / 4; // 45 degrees
+       // Rotate
+       // Challenge Lock Check
+       if (gameMode === "challenge" && clicked.isLocked) {
+           // Do nothing/Shake?
+       } else {
+           clicked.rotation += Math.PI / 4; // 45 degrees
+           
+           // If Laser, toggle? NO, user asked for rotate on tap.
+           // Maybe separate button or double tap for toggle? 
+           // Standard behavior: rotate.
+           // Special case: Mirror lock, etc.
+           
+           if (clicked.type === 'laser') {
+               // Lasers might also toggle on tap?
+               // Let's stick to rotate as primary action requested.
+           }
+       }
     } else {
-      // Laser toggle?
+       // Tapped empty space
     }
   }
-});
+}
+
 
 // ---------------------------------------------------------
 // Drag & Drop (Toolbox)

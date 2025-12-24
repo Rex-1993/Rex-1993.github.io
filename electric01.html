@@ -296,6 +296,18 @@
             </div>
           </div>
 
+          <!-- Challenge HUD (Moved to Sidebar) -->
+          <div id="challenge-hud" class="hidden">
+            <div class="hud-item">
+              <span class="label">得分：</span>
+              <span id="score-val">0</span> / <span id="total-val">0</span>
+            </div>
+            <div class="hud-item">
+              <span class="label">題目：</span>
+              <span id="question-text">請連接電路...</span>
+            </div>
+          </div>
+
           <div class="sidebar-controls">
             <button id="verify-btn" class="btn success hidden">驗證答案</button>
             <button id="clear-btn" class="btn danger">清除全部</button>
@@ -308,15 +320,7 @@
 
         <div class="workspace-container">
           <!-- Challenge HUD (Integrated into background) -->
-          <div id="challenge-hud" class="hidden">
-            <div class="hud-score">
-              得分: <span id="score-val">0</span> /
-              <span id="total-val">0</span>
-            </div>
-            <div class="hud-question">
-              題目: <span id="question-text">請連接電路...</span>
-            </div>
-          </div>
+
 
           <canvas id="circuit-canvas"></canvas>
           <div id="short-warning" class="warning-banner hidden">

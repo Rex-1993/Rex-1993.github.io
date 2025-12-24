@@ -275,13 +275,21 @@ main {
   /* Prevent selection in workspace */
   user-select: none;
   touch-action: none;
+  
+  /* Flex Layout for HUD + Canvas Stacking */
+  display: flex;
+  flex-direction: column;
 }
 
 #circuit-canvas {
   width: 100%;
-  height: 100%;
+  flex: 1; /* Take remaining height */
+  height: 0; /* Important for flex child scrolling/sizing */
+  min-height: 0;
   display: block;
   touch-action: none;
+  position: relative;
+  z-index: 2;
 }
 
 #status-display {
@@ -417,6 +425,8 @@ main {
     gap: 8px; /* Tighter gap on mobile */
     display: grid;
     grid-template-columns: repeat(2, 1fr);
+    /* Extra padding at bottom to prevent cutoff by browser bars */
+    padding-bottom: calc(20px + env(safe-area-inset-bottom, 10px)); 
   }
 
   .btn {
@@ -467,16 +477,38 @@ main {
   }
 
   /* Mobile HUD Adjustments */
+  .workspace-container {
+    display: flex;
+    flex-direction: column;
+  }
+
   #challenge-hud {
-    padding: 5px 10px;
+    position: relative; /* Stack above canvas */
+    height: auto;
+    width: 100%;
+    padding: 8px 10px;
     flex-direction: row;
-    align-items: flex-start;
+    align-items: center;
+    background: #eef2f3; /* Slight background to separate */
+    border-bottom: 1px solid #ddd;
+    z-index: 5;
+  }
+
+  #circuit-canvas {
+    flex: 1;
+    height: 0; /* Flex grow */
+    min-height: 0;
   }
 
   .hud-score,
   .hud-question {
-    font-size: 0.9rem;
-    padding: 4px 10px;
+    font-size: 0.85rem;
+    padding: 4px 8px;
+    background: white; /* clearer bg */
+    width: auto;
+    max-width: none;
+    text-align: left;
+    margin: 0 2px;
   }
 }
 
@@ -678,20 +710,70 @@ main {
 }
 
 /* Challenge HUD - Integrated Background Style */
+/* Challenge HUD in Sidebar */
 #challenge-hud {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none; /* Allow clicks to pass through to canvas */
-  z-index: 1; /* Below canvas components if canvas is transparent, but canvas is usually opaque interaction layer. check z-index of canvas */
+  position: relative;
+  background: white;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
   display: flex;
-  flex-direction: row; /* Horizontal layout by default */
-  justify-content: space-between;
-  align-items: flex-start; /* Top aligned */
-  padding: 15px 20px;
-  box-sizing: border-box;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 20px;
+  z-index: 10;
+  border: 2px solid #3498db;
+  pointer-events: auto; /* Allow interactions if needed inside sidebar */
+}
+
+.hud-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* Ensure labels align left */
+  gap: 8px;
+  width: 100%;
+}
+
+/* Specific layout for Score row */
+#challenge-hud .hud-item:first-child {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed #eee;
+    padding-bottom: 10px;
+    margin-bottom: 5px;
+}
+
+.hud-item .label {
+    background-color: #3498db;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    display: inline-block;
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+}
+
+#question-text {
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-left: 5px solid #e74c3c; /* Red accent for visibility */
+    border-radius: 6px;
+    padding: 12px;
+    color: #2c3e50;
+    font-size: 1rem;
+    line-height: 1.5;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 60px; /* Ensure space for multi-line */
+}
+
+#score-val, #total-val {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #2c3e50;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
 #circuit-canvas {
@@ -706,18 +788,12 @@ main {
 /* Remove old hud-top container styling */
 .hud-score,
 .hud-question {
-  background: rgba(
-    255,
-    255,
-    255,
-    0.4
-  ); /* Very transparent background for readability */
-  padding: 5px 15px;
-  border-radius: 20px;
-  backdrop-filter: blur(2px);
+  background: #f8f9fa;
+  padding: 8px 15px;
+  border-radius: 8px;
+  border: 1px solid #eee;
   color: #34495e;
   font-weight: bold;
-  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
 .hud-score {
@@ -951,126 +1027,104 @@ main {
   border: none;
 }
 
-/* Optimized Landscape Support (Moved to End for Specificity) */
+/* Landscape Mobile Optimization */
 @media (max-height: 600px) and (orientation: landscape) {
   header {
     display: none;
   }
 
   .container {
+    height: 100dvh; /* Ensure full viewport height */
     padding: 5px;
+    width: 100vw;
   }
 
   main {
-    flex-direction: row;
+    flex-direction: row; /* Sidebar on left, canvas on right */
+    gap: 10px;
   }
 
   .sidebar {
-    width: 280px;
+    width: 260px; /* Reduced width */
     height: 100%;
     max-height: none;
     overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
   }
 
   .toolbox {
     grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 10px;
   }
 
+  .component-item {
+    padding: 8px;
+  }
+  
   .component-item span {
     display: block;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
   }
 
   .workspace-container {
     height: 100%;
+    flex: 1;
   }
 
-  /* Optimized Results Panel for Landscape Mobile */
-  .panel.results-panel {
-    flex-direction: row;
-    max-width: 750px;
-    height: 90vh;
-    padding: 1.5rem;
-    gap: 20px;
-    overflow: hidden;
+  /* Adjust sidebar controls for landscape */
+  .sidebar-controls {
+    margin-top: auto;
+    padding-bottom: 5px; /* Minimal padding since it's scrolled */
+    gap: 5px;
   }
 
-  .results-summary {
-    width: 40%;
-    justify-content: center;
-    flex-shrink: 0;
-  }
-
-  .results-details {
-    width: 60%;
-    height: 100%;
-    overflow-y: auto;
-    justify-content: flex-start;
-    padding-right: 5px;
-  }
-
-  .results-summary h2 {
-    font-size: 1.8rem;
-    margin-bottom: 10px;
-  }
-
-  .results-summary .final-score {
-    font-size: 2rem;
-    margin: 10px 0;
-  }
-
-  .results-summary #btn-restart {
-    width: auto;
-    padding: 10px 20px;
-    font-size: 1rem;
-    margin-top: 10px;
-  }
-}
-
-/* ========================================= */
-/* Landscape Mobile Optimization             */
-/* ========================================= */
-@media (max-height: 600px) and (orientation: landscape) {
-  .container {
-    height: 100vh;
-    padding: 5px;
-  }
-
-  header {
-    display: none; /* Hide header to save space */
-  }
-
+  /* Start Screen & Modals */
   .panel {
-    padding: 1rem 2rem;
+    padding: 1rem 1.5rem;
     max-height: 95vh;
-    overflow-y: auto; /* Allow scrolling */
-    width: 80%;
-    max-width: 600px;
+    overflow-y: auto;
+    width: 85%;
+    max-width: 650px;
   }
 
   .start-panel h1 {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-  }
-
-  .start-panel p {
+    font-size: 1.8rem;
     margin-bottom: 0.5rem;
   }
 
   .mode-selection {
     margin-top: 1rem;
-    gap: 15px; /* Slightly more gap for vertical */
-    flex-direction: column; /* Vertical alignment as requested */
-    align-items: center;
+    gap: 10px;
+    flex-direction: row; /* Keep horizontal if possible, or wrap */
+    flex-wrap: wrap;
   }
 
   .btn-primary-large,
   .btn-secondary-large,
   .btn-home-large,
   .btn-info-large {
-    padding: 10px 20px;
-    font-size: 1.1rem;
-    min-width: 150px;
+    padding: 8px 15px;
+    font-size: 1rem;
+    min-width: 120px;
+    flex: 1;
+  }
+
+  /* Optimized Results Panel for Landscape */
+  .panel.results-panel {
+    flex-direction: row;
+    max-width: 700px;
+    padding: 1rem;
+    gap: 15px;
+  }
+
+  .results-summary {
+    width: 35%;
+  }
+  .results-details {
+    width: 65%;
   }
 }
 
@@ -1306,13 +1360,13 @@ main {
   padding: 8px 12px;
   border-radius: 20px;
   backdrop-filter: blur(4px);
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .heart-icon {
   font-size: 1.5rem;
   transition: all 0.3s ease;
-  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.1));
 }
 
 .heart-icon.empty {
@@ -1331,7 +1385,7 @@ main {
   align-items: center;
   gap: 8px;
   width: fit-content;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   transition: color 0.3s ease, transform 0.3s ease;
 }
 
@@ -1341,9 +1395,15 @@ main {
 }
 
 @keyframes pulse-timer {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .heart-lost {
@@ -1351,9 +1411,19 @@ main {
 }
 
 @keyframes heart-shiver {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  50% { transform: translateX(5px); }
-  75% { transform: translateX(-5px); }
-  100% { transform: translateX(0); }
+  0% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  50% {
+    transform: translateX(5px);
+  }
+  75% {
+    transform: translateX(-5px);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
