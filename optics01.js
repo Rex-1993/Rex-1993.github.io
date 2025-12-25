@@ -884,18 +884,15 @@ function updateToolboxUI() {
     if (gameMode === "challenge") {
       // Only allow mirrors to be added
       if (type !== "mirror") {
-        item.style.opacity = "0.3";
-        item.style.pointerEvents = "none";
+        item.style.display = "none";
         item.setAttribute("draggable", "false");
       } else {
-        item.style.opacity = "1";
-        item.style.pointerEvents = "auto";
+        item.style.display = "flex";
         item.setAttribute("draggable", "true");
       }
     } else {
       // Normal mode allows all
-      item.style.opacity = "1";
-      item.style.pointerEvents = "auto";
+      item.style.display = "flex";
       item.setAttribute("draggable", "true");
     }
   });
