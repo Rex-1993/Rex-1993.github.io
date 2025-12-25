@@ -903,16 +903,33 @@ class CircuitAnalyzer {
 // ---------------------------------------------------------
 // Sound & Visual Effects (Web Audio API)
 // ---------------------------------------------------------
+// ---------------------------------------------------------
+// Sound & Visual Effects (Web Audio API)
+// ---------------------------------------------------------
 const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
+const audioBuffers = {};
 
 function initAudio() {
+  if (!AudioContext) return;
   if (!audioCtx) {
     audioCtx = new AudioContext();
   }
   if (audioCtx.state === "suspended") {
     audioCtx.resume();
   }
+  
+  // Preload Firework Noise if not exists
+  if (!audioBuffers["firework"]) {
+    const bufferSize = audioCtx.sampleRate * 2; // 2 seconds
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+    }
+    audioBuffers["firework"] = buffer;
+  }
+
   return audioCtx;
 }
 
@@ -924,8 +941,6 @@ function playWaterDropSound() {
   const gain = ctx.createGain();
 
   osc.type = "sine";
-  // Water drop: Frequency swipe down then up or just simple resonance
-  // Classic chirp: High to Low quickly
   osc.frequency.setValueAtTime(800, ctx.currentTime);
   osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.1);
 
@@ -942,18 +957,10 @@ function playWaterDropSound() {
 
 function playFireworkSound() {
   const ctx = initAudio();
-  if (!ctx) return;
-
-  const bufferSize = ctx.sampleRate * 2; // 2 seconds
-  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-  const data = buffer.getChannelData(0);
-
-  for (let i = 0; i < bufferSize; i++) {
-    data[i] = Math.random() * 2 - 1;
-  }
+  if (!ctx || !audioBuffers["firework"]) return;
 
   const noise = ctx.createBufferSource();
-  noise.buffer = buffer;
+  noise.buffer = audioBuffers["firework"];
 
   const gain = ctx.createGain();
   // Explosion envelope

@@ -1043,34 +1043,78 @@ function showResults(failed = false) {
 }
 
 // Beep for countdown (Web Audio API)
-function playBeep() {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    
-    const ctx = new AudioContext();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
-    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
-    
-    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
-    
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
-    osc.start();
-    osc.stop(ctx.currentTime + 0.15);
+// ---------------------------------------------------------
+// Web Audio API Controller
+// ---------------------------------------------------------
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+const audioBuffers = {};
+const soundURLs = {
+  "snd-click": "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
+  "snd-victory": "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
+  "snd-success": "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
+  "snd-fail": "https://assets.mixkit.co/active_storage/sfx/731/731-preview.mp3"
+};
+
+function initAudio() {
+  if (!AudioContext) return;
+  if (!audioCtx) {
+    audioCtx = new AudioContext();
+  }
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
+
+  // Preload all sounds
+  Object.keys(soundURLs).forEach(async (id) => {
+    if (!audioBuffers[id]) {
+      try {
+        const res = await fetch(soundURLs[id]);
+        const arrayBuffer = await res.arrayBuffer();
+        audioBuffers[id] = await audioCtx.decodeAudioData(arrayBuffer);
+      } catch (e) {
+        console.warn("Failed to load sound:", id, e);
+      }
+    }
+  });
 }
 
 function playSound(id) {
-  const snd = document.getElementById(id);
-  if (snd) {
-    snd.currentTime = 0;
-    snd.play().catch(() => {}); // Ignore autoplay blocks
+  // Try Web Audio first
+  if (audioCtx && audioBuffers[id]) {
+    const source = audioCtx.createBufferSource();
+    source.buffer = audioBuffers[id];
+    source.connect(audioCtx.destination);
+    source.start(0);
+  } else {
+    // Fallback to HTML Audio Element
+    const snd = document.getElementById(id);
+    if (snd) {
+      snd.currentTime = 0;
+      snd.play().catch(() => {});
+    }
   }
+}
+
+function playBeep() {
+  if (!audioCtx) initAudio(); // Try to init if missing
+  if (!audioCtx) return;
+
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(880, audioCtx.currentTime); // A5
+  osc.frequency.exponentialRampToValueAtTime(440, audioCtx.currentTime + 0.1);
+
+  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.15);
 }
 
 function hideContextMenu() {
@@ -1305,6 +1349,16 @@ window.addEventListener(
 // ---------------------------------------------------------
 function init() {
   resizeCanvas();
+  
+  // Unlock Audio on first interaction
+  const unlockAudio = () => {
+    initAudio();
+    document.removeEventListener("touchstart", unlockAudio);
+    document.removeEventListener("click", unlockAudio);
+  };
+  document.addEventListener("touchstart", unlockAudio, { passive: true });
+  document.addEventListener("click", unlockAudio);
+
   // Show Start Screen
   if (startScreen) {
     openAnimModal(startScreen);
