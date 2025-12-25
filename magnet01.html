@@ -6,6 +6,9 @@
       name="viewport"
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
     <title>小小磁鐵科學家</title>
     <link rel="stylesheet" href="style.css" />
     <link rel="manifest" href="manifest.json" />
@@ -15,14 +18,15 @@
       href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap"
       rel="stylesheet"
     />
-    <meta name="theme-color" content="#4A90E2">
-    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4A90E2" />
+    <link rel="manifest" href="manifest.json" />
     <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then(registration => console.log('SW registered'))
-            .catch(err => console.log('SW registration failed: ', err));
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("./sw.js")
+            .then((registration) => console.log("SW registered"))
+            .catch((err) => console.log("SW registration failed: ", err));
         });
       }
     </script>
@@ -41,9 +45,7 @@
             <button id="btn-open-instructions" class="btn-info-large">
               操作說明
             </button>
-            <a href="index.html" class="btn-home-large">
-              回到主頁
-            </a>
+            <a href="index.html" class="btn-home-large"> 回到主頁 </a>
           </div>
         </div>
       </div>
@@ -63,9 +65,7 @@
                 <strong>觀察現象：</strong
                 >移動磁鐵靠近其他物品，看看會發生什麼事情？
               </li>
-              <li>
-                <strong>旋轉物品：</strong>點擊工作區上的物品可以旋轉它。
-              </li>
+              <li><strong>旋轉物品：</strong>點擊工作區上的物品可以旋轉它。</li>
               <li>
                 <strong>刪除物品：</strong
                 >對著物品按右鍵（或手機長按）可以刪除。
@@ -75,8 +75,8 @@
             <h3>小知識</h3>
             <ul>
               <li>
-                🧲 <strong>同極相斥，異極相吸：</strong
-                >試試看把兩個磁鐵的 N 極靠近看看！
+                🧲 <strong>同極相斥，異極相吸：</strong>試試看把兩個磁鐵的 N
+                極靠近看看！
               </li>
             </ul>
           </div>
@@ -87,12 +87,14 @@
       <!-- Generic Custom Modal -->
       <div id="generic-modal" class="overlay hidden">
         <div class="panel modal-panel">
-           <h2 id="modal-title">標題</h2>
-           <p id="modal-message">訊息內容</p>
-           <div class="modal-buttons">
-             <button id="modal-btn-confirm" class="btn-primary">確定</button>
-             <button id="modal-btn-cancel" class="btn-danger hidden">取消</button>
-           </div>
+          <h2 id="modal-title">標題</h2>
+          <p id="modal-message">訊息內容</p>
+          <div class="modal-buttons">
+            <button id="modal-btn-confirm" class="btn primary">確定</button>
+            <button id="modal-btn-cancel" class="btn secondary hidden">
+              取消
+            </button>
+          </div>
         </div>
       </div>
 
@@ -107,11 +109,52 @@
           <div class="toolbox">
             <div class="component-item" draggable="true" data-type="bar_magnet">
               <div class="icon">
-                <svg width="60" height="30" viewBox="0 0 80 40" style="overflow: visible;">
-                  <rect x="10" y="5" width="30" height="30" fill="#ff4757" stroke="#333" stroke-width="2"/>
-                  <rect x="40" y="5" width="30" height="30" fill="#3498db" stroke="#333" stroke-width="2"/>
-                  <text x="25" y="27" fill="white" font-weight="bold" font-family="Arial" text-anchor="middle" font-size="20">N</text>
-                  <text x="55" y="27" fill="white" font-weight="bold" font-family="Arial" text-anchor="middle" font-size="20">S</text>
+                <svg
+                  width="60"
+                  height="30"
+                  viewBox="0 0 80 40"
+                  style="overflow: visible"
+                >
+                  <rect
+                    x="10"
+                    y="5"
+                    width="30"
+                    height="30"
+                    fill="#ff4757"
+                    stroke="#333"
+                    stroke-width="2"
+                  />
+                  <rect
+                    x="40"
+                    y="5"
+                    width="30"
+                    height="30"
+                    fill="#3498db"
+                    stroke="#333"
+                    stroke-width="2"
+                  />
+                  <text
+                    x="25"
+                    y="27"
+                    fill="white"
+                    font-weight="bold"
+                    font-family="Arial"
+                    text-anchor="middle"
+                    font-size="20"
+                  >
+                    N
+                  </text>
+                  <text
+                    x="55"
+                    y="27"
+                    fill="white"
+                    font-weight="bold"
+                    font-family="Arial"
+                    text-anchor="middle"
+                    font-size="20"
+                  >
+                    S
+                  </text>
                 </svg>
               </div>
               <span>長條磁鐵</span>
@@ -154,7 +197,7 @@
           <!-- Context Menu -->
           <div id="context-menu" class="hidden">
             <div class="menu-item">
-                <span id="menu-material-info">材質: 未知</span>
+              <span id="menu-material-info">材質: 未知</span>
             </div>
             <div
               class="menu-item"

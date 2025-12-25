@@ -901,6 +901,199 @@ class CircuitAnalyzer {
 }
 
 // ---------------------------------------------------------
+// Sound & Visual Effects (Web Audio API)
+// ---------------------------------------------------------
+const AudioContext = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+
+function initAudio() {
+  if (!audioCtx) {
+    audioCtx = new AudioContext();
+  }
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume();
+  }
+  return audioCtx;
+}
+
+function playWaterDropSound() {
+  const ctx = initAudio();
+  if (!ctx) return;
+
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc.type = "sine";
+  // Water drop: Frequency swipe down then up or just simple resonance
+  // Classic chirp: High to Low quickly
+  osc.frequency.setValueAtTime(800, ctx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(400, ctx.currentTime + 0.1);
+
+  gain.gain.setValueAtTime(0, ctx.currentTime);
+  gain.gain.linearRampToValueAtTime(1, ctx.currentTime + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc.start();
+  osc.stop(ctx.currentTime + 0.2);
+}
+
+function playFireworkSound() {
+  const ctx = initAudio();
+  if (!ctx) return;
+
+  const bufferSize = ctx.sampleRate * 2; // 2 seconds
+  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < bufferSize; i++) {
+    data[i] = Math.random() * 2 - 1;
+  }
+
+  const noise = ctx.createBufferSource();
+  noise.buffer = buffer;
+
+  const gain = ctx.createGain();
+  // Explosion envelope
+  gain.gain.setValueAtTime(0.5, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 1.5);
+
+  // Lowpass filter for "boom"
+  const filter = ctx.createBiquadFilter();
+  filter.type = "lowpass";
+  filter.frequency.value = 1000;
+
+  noise.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+
+  noise.start();
+}
+
+// Firework Particle System
+class Firework {
+  constructor(canvas, ctx) {
+    this.canvas = canvas;
+    this.ctx = ctx;
+    this.x = Math.random() * canvas.width;
+    this.y = canvas.height;
+    this.targetY = Math.random() * (canvas.height / 2);
+    this.speed = 5 + Math.random() * 5;
+    this.angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.5;
+    this.exploded = false;
+    this.particles = [];
+    this.color = `hsl(${Math.random() * 360}, 100%, 50%)`;
+  }
+
+  update() {
+    if (!this.exploded) {
+      this.x += Math.cos(this.angle) * this.speed;
+      this.y += Math.sin(this.angle) * this.speed;
+      this.speed *= 0.98; // Gravity/Drag?
+
+      if (this.y <= this.targetY || this.speed < 1) {
+        this.explode();
+      }
+    } else {
+      this.particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += 0.05; // Gravity
+        p.life -= 0.02;
+      });
+      this.particles = this.particles.filter((p) => p.life > 0);
+    }
+  }
+
+  explode() {
+    this.exploded = true;
+    for (let i = 0; i < 50; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = Math.random() * 3;
+      this.particles.push({
+        x: this.x,
+        y: this.y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 1.0,
+        color: this.color,
+      });
+    }
+  }
+
+  draw() {
+    if (!this.exploded) {
+      this.ctx.fillStyle = this.color;
+      this.ctx.beginPath();
+      this.ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+      this.ctx.fill();
+    } else {
+      this.particles.forEach((p) => {
+        this.ctx.fillStyle = p.color;
+        this.ctx.globalAlpha = p.life;
+        this.ctx.beginPath();
+        this.ctx.arc(p.x, p.y, 2, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.globalAlpha = 1.0;
+      });
+    }
+  }
+
+  isDead() {
+    return this.exploded && this.particles.length === 0;
+  }
+}
+
+function launchFireworks(duration = 3000) {
+  const fCanvas = document.createElement("canvas");
+  fCanvas.style.position = "fixed";
+  fCanvas.style.top = "0";
+  fCanvas.style.left = "0";
+  fCanvas.style.width = "100%";
+  fCanvas.style.height = "100%";
+  fCanvas.style.pointerEvents = "none";
+  fCanvas.style.zIndex = "9999";
+  document.body.appendChild(fCanvas);
+
+  const fCtx = fCanvas.getContext("2d");
+  const dpr = window.devicePixelRatio || 1;
+  fCanvas.width = window.innerWidth * dpr;
+  fCanvas.height = window.innerHeight * dpr;
+  fCtx.scale(dpr, dpr);
+
+  let fireworks = [];
+  let running = true;
+  const startTime = Date.now();
+
+  function loop() {
+    if (!running) {
+      document.body.removeChild(fCanvas);
+      return;
+    }
+
+    fCtx.clearRect(0, 0, fCanvas.width / dpr, fCanvas.height / dpr);
+
+    if (Date.now() - startTime < duration) {
+      if (Math.random() < 0.05) {
+        fireworks.push(new Firework({ width: fCanvas.width / dpr, height: fCanvas.height / dpr }, fCtx));
+      }
+    } else if (fireworks.length === 0) {
+      running = false;
+    }
+
+    fireworks.forEach((f) => f.update());
+    fireworks.forEach((f) => f.draw());
+    fireworks = fireworks.filter((f) => !f.isDead());
+
+    requestAnimationFrame(loop);
+  }
+
+  loop();
+}
+
+// ---------------------------------------------------------
 // Challenge Manager
 // ---------------------------------------------------------
 class ChallengeManager {
@@ -1068,6 +1261,7 @@ class ChallengeManager {
 
     if (isCorrect) {
       this.score++;
+      playWaterDropSound();
       showModal("挑戰結果", "🎉 答對了！", "info").then(() => {
         this.nextQuestion();
       });
@@ -1103,6 +1297,11 @@ class ChallengeManager {
     openAnimModal(resScreen);
 
     document.getElementById("final-score-val").textContent = this.score;
+
+    if (this.score === this.totalQuestions) {
+        playFireworkSound();
+        launchFireworks(3000);
+    }
 
     // Mistakes List
     const list = document.getElementById("mistakes-list");

@@ -308,6 +308,10 @@ function startChallengeTimer() {
     challengeState.timeLeft--;
     updateTimerUI();
 
+    if (challengeState.timeLeft <= 10 && challengeState.timeLeft > 0) {
+        playBeep();
+    }
+
     if (challengeState.timeLeft <= 0) {
       handleTimeUp();
     }
@@ -1041,6 +1045,29 @@ function showResults(failed = false) {
   openAnimModal(resultsScreen);
 }
 
+// Beep for countdown (Web Audio API)
+function playBeep() {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(880, ctx.currentTime); // A5
+    osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
+    
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+    
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
+    osc.start();
+    osc.stop(ctx.currentTime + 0.15);
+}
+
 function playSound(id) {
   const snd = document.getElementById(id);
   if (snd) {
@@ -1069,6 +1096,23 @@ menuDelete.addEventListener("click", () => {
 window.addEventListener("click", (e) => {
   if (!contextMenu.contains(e.target)) hideContextMenu();
 });
+
+// Event Listeners for Results Screen
+const restartBtn = document.getElementById("btn-restart");
+if (restartBtn) {
+    restartBtn.addEventListener("click", () => {
+        closeAnimModal(document.getElementById("results-screen"));
+        // Restart Challenge
+        startChallengeMode();
+    });
+}
+
+const resultsHomeBtn = document.getElementById("btn-results-home");
+if (resultsHomeBtn) {
+    resultsHomeBtn.addEventListener("click", () => {
+        window.location.reload();
+    });
+}
 
 // UI Helper Functions (Animations & Modals)
 function openAnimModal(element) {
@@ -1155,7 +1199,7 @@ clearBtn.addEventListener("click", () => {
 if (homeBtn) {
   homeBtn.addEventListener(
     "click",
-    () => (window.location.href = "index.html")
+    () => window.location.reload()
   );
 }
 
