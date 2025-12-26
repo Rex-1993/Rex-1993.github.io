@@ -33,7 +33,7 @@ const challengeState = {
   health: 5,
   timeLeft: 30,
   maxTime: 30,
-  timerInterval: null
+  timerInterval: null,
 };
 
 // ---------------------------------------------------------
@@ -113,6 +113,22 @@ class Component {
     });
   }
 
+  containsPoint(pos) {
+    // 1. Check Rectangular Bounds (Standard for all)
+    const corners = this.getCorners();
+    let inside = isPointInPoly(pos, corners);
+
+    // 2. Extra Check for Mirror (Circular Area)
+    if (!inside && this.type === "mirror") {
+      const d = Math.hypot(pos.x - this.x, pos.y - this.y);
+      // Radius 40 to match visual
+      if (d <= 40) {
+        inside = true;
+      }
+    }
+    return inside;
+  }
+
   // Get line segments for collision (World Space)
   // For mirrors, mainly the front face matters, but let's do all sides for blocks
   getSegments() {
@@ -157,9 +173,22 @@ class Component {
       ctx.textBaseline = "middle";
       // ctx.fillText("ON", 0, 0);
     } else if (this.type === "mirror") {
+      // Visual touch area aid (Semi-transparent circle)
+      ctx.fillStyle = "rgba(100, 100, 100, 0.1)"; // Very subtle grey
+      ctx.beginPath();
+      // Radius 40
+      ctx.arc(0, 0, 40, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Border for the circle to make it slightly more visible but clean
+      ctx.strokeStyle = "rgba(150, 150, 150, 0.2)";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+
       // Front face (Positive X side in local?) -> No, Plane Mirror usually reflects on both or one side.
       // Let's assume double sided for simplicity OR visual indicator.
       // Let's make it a thick slab.
+      ctx.lineWidth = 2; // Restore line width for next strokes
 
       // Frame
       ctx.fillStyle = "#95a5a6";
@@ -171,7 +200,7 @@ class Component {
 
       // Reflection hint
       ctx.strokeStyle = "rgba(255,255,255,0.8)";
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2; // Ensure thickness
       ctx.beginPath();
       ctx.moveTo(-2, -30);
       ctx.lineTo(-2, 30);
@@ -309,7 +338,7 @@ function startChallengeTimer() {
     updateTimerUI();
 
     if (challengeState.timeLeft <= 10 && challengeState.timeLeft > 0) {
-        playBeep();
+      playBeep();
     }
 
     if (challengeState.timeLeft <= 0) {
@@ -388,7 +417,7 @@ function castRay(start, dir, segments, depth) {
         minDist = dist;
         closest = info.point;
         closestSeg = seg;
-        
+
         // Calculate Normal
         const dx = seg.p2.x - seg.p1.x;
         const dy = seg.p2.y - seg.p1.y;
@@ -405,7 +434,11 @@ function castRay(start, dir, segments, depth) {
 
   if (closest) {
     // Register hit on target ONLY if it's the closest object hit
-    if (closestSeg && closestSeg.parent && closestSeg.parent.type === "target") {
+    if (
+      closestSeg &&
+      closestSeg.parent &&
+      closestSeg.parent.type === "target"
+    ) {
       closestSeg.parent.isHit = true;
     }
 
@@ -513,7 +546,6 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-
 // ---------------------------------------------------------
 // Interaction Logic
 // ---------------------------------------------------------
@@ -570,7 +602,7 @@ function handleStart(e) {
   const clicked = components
     .slice()
     .reverse()
-    .find((c) => isPointInPoly(pos, c.getCorners()));
+    .find((c) => c.containsPoint(pos));
 
   if (clicked) {
     // Challenge Restriction
@@ -589,11 +621,10 @@ function handleStart(e) {
     // Start Long Press Timer
     if (longPressTimer) clearTimeout(longPressTimer);
     longPressTimer = setTimeout(() => {
-        isDragging = false;
-        draggedComponent = null;
-        showContextMenu(clicked, pos.x, pos.y);
+      isDragging = false;
+      draggedComponent = null;
+      showContextMenu(clicked, pos.x, pos.y);
     }, LONG_PRESS_DURATION);
-
   } else {
     hideContextMenu();
   }
@@ -604,10 +635,13 @@ function handleMove(e) {
   const pos = getEventPos(e);
 
   // Use dragStartPosition defined in scope
-  const dist = Math.hypot(pos.x - dragStartPosition.x, pos.y - dragStartPosition.y);
+  const dist = Math.hypot(
+    pos.x - dragStartPosition.x,
+    pos.y - dragStartPosition.y
+  );
   if (longPressTimer && dist > 10) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
   }
 
   if (isDragging && draggedComponent) {
@@ -617,7 +651,7 @@ function handleMove(e) {
     const hover = components
       .slice()
       .reverse()
-      .find((c) => isPointInPoly(pos, c.getCorners()));
+      .find((c) => c.containsPoint(pos));
     if (hover) {
       if (gameMode === "challenge" && hover.isLocked) {
         canvas.style.cursor = "not-allowed";
@@ -633,10 +667,10 @@ function handleMove(e) {
 function handleEnd(e) {
   if (e.button === 2) return; // Ignore right-click release
   if (longPressTimer) {
-      clearTimeout(longPressTimer);
-      longPressTimer = null;
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
   }
-  
+
   isDragging = false;
   draggedComponent = null;
   canvas.style.cursor = "default";
@@ -644,22 +678,25 @@ function handleEnd(e) {
   // Tap Detection (Robust for both Mouse and Touch)
   const timeDiff = Date.now() - dragStartTime;
 
-  // Need end coordinates. For mouseup e.clientX is fine. 
+  // Need end coordinates. For mouseup e.clientX is fine.
   // For touchend, use changedTouches.
   let clientX, clientY;
   if (e.changedTouches && e.changedTouches.length > 0) {
-      clientX = e.changedTouches[0].clientX;
-      clientY = e.changedTouches[0].clientY;
+    clientX = e.changedTouches[0].clientX;
+    clientY = e.changedTouches[0].clientY;
   } else {
-      clientX = e.clientX;
-      clientY = e.clientY;
+    clientX = e.clientX;
+    clientY = e.clientY;
   }
-  
+
   const rect = canvas.getBoundingClientRect();
   const endX = clientX - rect.left;
   const endY = clientY - rect.top;
-  
-  const dist = Math.hypot(endX - dragStartPosition.x, endY - dragStartPosition.y);
+
+  const dist = Math.hypot(
+    endX - dragStartPosition.x,
+    endY - dragStartPosition.y
+  );
 
   // If short time and small movement -> It's a TAP/CLICK
   if (timeDiff < 300 && dist < 10) {
@@ -667,27 +704,26 @@ function handleEnd(e) {
     const clicked = components
       .slice()
       .reverse()
-      .find((c) => isPointInPoly(dragStartPosition, c.getCorners()));
-      
+      .find((c) => c.containsPoint(dragStartPosition));
+
     if (clicked) {
-       // Rotate
-       // Challenge Lock Check
-       if (gameMode === "challenge" && clicked.isLocked) {
-           // Do nothing/Shake?
-       } else {
-           clicked.rotation += Math.PI / 4; // 45 degrees
-           
-           if (clicked.type === 'laser') {
-               // Lasers might also toggle on tap?
-               // Let's stick to rotate as primary action requested.
-           }
-       }
+      // Rotate
+      // Challenge Lock Check
+      if (gameMode === "challenge" && clicked.isLocked) {
+        // Do nothing/Shake?
+      } else {
+        clicked.rotation += Math.PI / 4; // 45 degrees
+
+        if (clicked.type === "laser") {
+          // Lasers might also toggle on tap?
+          // Let's stick to rotate as primary action requested.
+        }
+      }
     } else {
-       // Tapped empty space
+      // Tapped empty space
     }
   }
 }
-
 
 // ---------------------------------------------------------
 // Drag & Drop (Toolbox)
@@ -808,7 +844,7 @@ canvas.addEventListener("contextmenu", (e) => {
   const comp = components
     .slice()
     .reverse()
-    .find((c) => isPointInPoly(pos, c.getCorners()));
+    .find((c) => c.containsPoint(pos));
 
   if (comp) {
     showContextMenu(comp, pos.x, pos.y);
@@ -816,45 +852,43 @@ canvas.addEventListener("contextmenu", (e) => {
 });
 
 function showContextMenu(comp, x, y) {
-    contextMenuTarget = comp;
-    
-    // Show first to measure
-    contextMenu.classList.remove("hidden");
-    
-    // Update Menu Content
-    if (comp.rotation !== undefined) {
-        const deg = Math.round((comp.rotation * 180) / Math.PI) % 360;
-        menuAngle.textContent = `角度: ${deg}°`;
-    }
-    
-    // Disable delete if locked
-    if (gameMode === "challenge" && comp.isLocked) {
-        menuDelete.classList.add("hidden");
-    } else {
-        menuDelete.classList.remove("hidden");
-    }
+  contextMenuTarget = comp;
 
-    // Calculate Positioning logic after content update (size might change)
-    const menuWidth = contextMenu.offsetWidth;
-    const menuHeight = contextMenu.offsetHeight;
-    const containerWidth = canvas.clientWidth;
-    const containerHeight = canvas.clientHeight;
+  // Show first to measure
+  contextMenu.classList.remove("hidden");
 
-    // Adjust X
-    if (x + menuWidth > containerWidth) {
-        x -= menuWidth;
-    }
+  // Update Menu Content
+  if (comp.rotation !== undefined) {
+    const deg = Math.round((comp.rotation * 180) / Math.PI) % 360;
+    menuAngle.textContent = `角度: ${deg}°`;
+  }
 
-    // Adjust Y
-    if (y + menuHeight > containerHeight) {
-        y -= menuHeight;
-    }
+  // Disable delete if locked
+  if (gameMode === "challenge" && comp.isLocked) {
+    menuDelete.classList.add("hidden");
+  } else {
+    menuDelete.classList.remove("hidden");
+  }
 
-    contextMenu.style.left = x + "px";
-    contextMenu.style.top = y + "px";
+  // Calculate Positioning logic after content update (size might change)
+  const menuWidth = contextMenu.offsetWidth;
+  const menuHeight = contextMenu.offsetHeight;
+  const containerWidth = canvas.clientWidth;
+  const containerHeight = canvas.clientHeight;
+
+  // Adjust X
+  if (x + menuWidth > containerWidth) {
+    x -= menuWidth;
+  }
+
+  // Adjust Y
+  if (y + menuHeight > containerHeight) {
+    y -= menuHeight;
+  }
+
+  contextMenu.style.left = x + "px";
+  contextMenu.style.top = y + "px";
 }
-
-
 
 // ---------------------------------------------------------
 // Challenge Logic
@@ -1050,10 +1084,13 @@ const AudioContext = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 const audioBuffers = {};
 const soundURLs = {
-  "snd-click": "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
-  "snd-victory": "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
-  "snd-success": "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
-  "snd-fail": "https://assets.mixkit.co/active_storage/sfx/731/731-preview.mp3"
+  "snd-click":
+    "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
+  "snd-victory":
+    "https://assets.mixkit.co/active_storage/sfx/1435/1435-preview.mp3",
+  "snd-success":
+    "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3",
+  "snd-fail": "https://assets.mixkit.co/active_storage/sfx/731/731-preview.mp3",
 };
 
 function initAudio() {
@@ -1141,18 +1178,18 @@ window.addEventListener("click", (e) => {
 // Event Listeners for Results Screen
 const restartBtn = document.getElementById("btn-restart");
 if (restartBtn) {
-    restartBtn.addEventListener("click", () => {
-        closeAnimModal(document.getElementById("results-screen"));
-        // Restart Challenge
-        startChallengeMode();
-    });
+  restartBtn.addEventListener("click", () => {
+    closeAnimModal(document.getElementById("results-screen"));
+    // Restart Challenge
+    startChallengeMode();
+  });
 }
 
 const resultsHomeBtn = document.getElementById("btn-results-home");
 if (resultsHomeBtn) {
-    resultsHomeBtn.addEventListener("click", () => {
-        window.location.reload();
-    });
+  resultsHomeBtn.addEventListener("click", () => {
+    window.location.reload();
+  });
 }
 
 // UI Helper Functions (Animations & Modals)
@@ -1238,10 +1275,7 @@ clearBtn.addEventListener("click", () => {
 
 // Home
 if (homeBtn) {
-  homeBtn.addEventListener(
-    "click",
-    () => window.location.reload()
-  );
+  homeBtn.addEventListener("click", () => window.location.reload());
 }
 
 // Start Screen & Instructions Logic
@@ -1349,7 +1383,7 @@ window.addEventListener(
 // ---------------------------------------------------------
 function init() {
   resizeCanvas();
-  
+
   // Unlock Audio on first interaction
   const unlockAudio = () => {
     initAudio();
