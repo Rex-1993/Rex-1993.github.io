@@ -25,6 +25,12 @@
         --glass-bg: rgba(255, 255, 255, 0.65);
         --glass-border: rgba(255, 255, 255, 0.4);
       }
+      body {
+        user-select: none;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+      }
 
       /* Lab table style for workspace container */
       .workspace-container.lab-table {
@@ -49,11 +55,19 @@
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         position: relative;
         cursor: grab;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
         transition: transform 0.2s, border-color 0.2s;
       }
       .reagent-beaker:hover {
         transform: translateY(-2px);
         border-color: var(--cabbage-purple);
+      }
+      .reagent-beaker * {
+        pointer-events: none;
+        user-select: none;
+        -webkit-user-select: none;
       }
       .beaker-svg-container {
         width: 80px;
@@ -74,15 +88,20 @@
         gap: 6px;
         transition: all 0.2s;
       }
-      .dropper-tool-btn:hover, .dropper-tool-btn.active-tool {
+      .reagent-beaker:hover .dropper-tool-btn {
         background: #ffeaa7;
         border-color: #f1c40f;
         box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
       }
-      .probe-tool-btn.active-tool {
-        border-color: #e74c3c !important;
-        box-shadow: 0 0 12px rgba(231, 76, 60, 0.6) !important;
-        transform: scale(1.1);
+      .probe-tool-btn {
+        touch-action: none;
+        user-select: none;
+        -webkit-user-select: none;
+      }
+      .probe-tool-btn * {
+        pointer-events: none;
+        user-select: none;
+        -webkit-user-select: none;
       }
 
       /* Test Tube Rack Display */
@@ -848,7 +867,7 @@
           </div>
           <div class="mode-selection" style="margin-top: 10px;">
             <button id="btn-open-instructions" class="btn-info-large" style="min-width: 220px;">
-              實驗說明書
+              操作說明
             </button>
             <a href="index.html" class="btn-home-large" style="min-width: 220px;">
               回到主頁
@@ -860,7 +879,7 @@
       <!-- Instructions Modal -->
       <div id="instructions-screen" class="overlay hidden">
         <div class="panel instructions-panel">
-          <h2>📖 實驗說明書</h2>
+          <h2>📖 操作說明</h2>
           <div class="instructions-content">
             <h3>🔬 認識天然酸鹼指示劑</h3>
             <p>
@@ -970,7 +989,7 @@
                 <path d="M 17.5,35 Q 25,37 32.5,35 T 47.5,35 Q 55,37 62.5,35 L 62.5,70 A 2,2 0 0,1 60.5,72 L 19.5,72 A 2,2 0 0,1 17.5,70 Z" fill="#8e44ad" opacity="0.85" />
               </svg>
             </div>
-            <div class="dropper-tool-btn" id="dropper-reagent" draggable="true">
+            <div class="dropper-tool-btn" id="dropper-reagent">
               💧 紫高麗菜汁滴管
             </div>
           </div>
@@ -1156,7 +1175,7 @@
       🍋
     </div>
 
-    <script src="cabbage01.js?v=10"></script>
+    <script src="cabbage01.js?v=12"></script>
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker

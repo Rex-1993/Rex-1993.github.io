@@ -539,7 +539,11 @@ function setupEventHandlers() {
   dropperBtn.addEventListener("dragstart", (e) => {
     draggingType = "dropper";
     e.dataTransfer.setData("text/plain", "indicator");
-    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.effectAllowed = "copy";
+    if (e.dataTransfer.setDragImage) {
+      // 確保只拖動燒杯大卡片本體
+      e.dataTransfer.setDragImage(e.currentTarget, 45, 55);
+    }
     activeTool = null;
   });
   dropperBtn.addEventListener("click", () => {
@@ -552,7 +556,11 @@ function setupEventHandlers() {
   probeBtn.addEventListener("dragstart", (e) => {
     draggingType = "probe";
     e.dataTransfer.setData("text/plain", "probe");
-    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.effectAllowed = "copy";
+    if (e.dataTransfer.setDragImage) {
+      // 確保只拖動 pH 探針按鈕本體
+      e.dataTransfer.setDragImage(e.currentTarget, 25, 25);
+    }
     activeTool = null;
   });
   probeBtn.addEventListener("click", () => {
