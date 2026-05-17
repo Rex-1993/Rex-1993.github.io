@@ -826,14 +826,21 @@
           font-size: 0.95rem !important;
         }
         .mode-selection {
+          flex-direction: column !important;
+          align-items: center !important;
           gap: 10px !important;
           margin-top: 1rem !important;
+          width: 100% !important;
         }
         .btn-primary-large, .btn-secondary-large, .btn-info-large, .btn-home-large {
-          padding: 10px 15px !important;
-          font-size: 1.05rem !important;
-          min-width: 130px !important;
-          flex: 1 1 auto !important;
+          padding: 12px 15px !important;
+          font-size: 1.1rem !important;
+          width: 85% !important;
+          max-width: 320px !important;
+          min-width: 250px !important;
+          flex: none !important;
+          text-align: center !important;
+          box-sizing: border-box !important;
         }
         
         /* Compact Instructions Panel */
@@ -871,12 +878,10 @@
             <button id="btn-challenge-mode" class="btn-secondary-large">
               挑戰酸鹼關卡
             </button>
-          </div>
-          <div class="mode-selection" style="margin-top: 10px;">
-            <button id="btn-open-instructions" class="btn-info-large" style="min-width: 220px;">
+            <button id="btn-open-instructions" class="btn-info-large">
               操作說明
             </button>
-            <a href="index.html" class="btn-home-large" style="min-width: 220px;">
+            <a href="index.html" class="btn-home-large">
               回到主頁
             </a>
           </div>
@@ -1182,7 +1187,7 @@
       🍋
     </div>
 
-    <script src="cabbage01.js?v=13"></script>
+    <script src="cabbage01.js?v=14"></script>
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
