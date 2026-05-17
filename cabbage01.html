@@ -372,6 +372,24 @@
         padding: 8px 12px;
         margin-bottom: 8px;
         gap: 6px;
+        max-height: 200px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(142, 68, 173, 0.5) rgba(0, 0, 0, 0.05);
+      }
+      #challenge-hud::-webkit-scrollbar {
+        width: 6px;
+      }
+      #challenge-hud::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.03);
+        border-radius: 4px;
+      }
+      #challenge-hud::-webkit-scrollbar-thumb {
+        background: rgba(142, 68, 173, 0.4);
+        border-radius: 4px;
+      }
+      #challenge-hud::-webkit-scrollbar-thumb:hover {
+        background: rgba(142, 68, 173, 0.7);
       }
       #challenge-hud .hud-item {
         gap: 4px;
@@ -849,7 +867,7 @@
       </svg>
     </div>
 
-    <script src="cabbage01.js?v=5"></script>
+    <script src="cabbage01.js?v=6"></script>
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
