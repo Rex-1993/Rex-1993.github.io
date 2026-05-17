@@ -867,11 +867,11 @@
       </svg>
     </div>
 
-    <script src="cabbage01.js?v=6"></script>
+    <script src="cabbage01.js?v=7"></script>
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
-          .register("./sw.js")
+          .register("./sw.js", { updateViaCache: "none" })
           .then(() => console.log("Service Worker Registered"))
           .catch((err) => console.log("SW Failed", err));
       }

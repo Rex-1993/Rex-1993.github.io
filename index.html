@@ -185,9 +185,34 @@
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('./sw.js')
-            .then(registration => console.log('SW registered'))
+          navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
+            .then(registration => {
+              console.log('SW registered successfully');
+              
+              // Detect updates to the service worker
+              registration.addEventListener('updatefound', () => {
+                const newWorker = registration.installing;
+                if (newWorker) {
+                  newWorker.addEventListener('statechange', () => {
+                    // If a new service worker is installed and there's an existing active service worker
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                      console.log('New Service Worker detected, reloading page for instant update...');
+                      window.location.reload();
+                    }
+                  });
+                }
+              });
+            })
             .catch(err => console.log('SW registration failed: ', err));
+        });
+        
+        // Also listen for controller changes to ensure a smooth reload when claiming clients
+        let refreshing = false;
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          if (!refreshing) {
+            refreshing = true;
+            window.location.reload();
+          }
         });
       }
     </script>
