@@ -12,7 +12,7 @@ const SOLUTIONS = {
     name: "檸檬汁",
     icon: "🍋",
     ph: 2,
-    baseColor: "rgba(254, 254, 220, 0.4)", // 微微淡黃色透明
+    baseColor: "rgba(254, 254, 200, 0.4)", // 微微淡黃色透明
     targetColor: "rgba(255, 63, 52, 0.85)", // 強酸：亮紅色
     type: "acid",
     typeName: "強酸性",
@@ -24,7 +24,7 @@ const SOLUTIONS = {
     name: "食醋",
     icon: "🍏",
     ph: 3,
-    baseColor: "rgba(255, 255, 255, 0.3)", // 透明
+    baseColor: "rgba(255, 255, 255, 0.15)", // 完全透明無色
     targetColor: "rgba(255, 94, 87, 0.85)", // 弱酸：粉紅色/紫紅色
     type: "acid",
     typeName: "弱酸性",
@@ -33,23 +33,23 @@ const SOLUTIONS = {
   },
   sprite: {
     id: "sprite",
-    name: "汽水",
-    icon: "🥤",
+    name: "無色汽水",
+    icon: "🫧",
     ph: 4,
-    baseColor: "rgba(255, 255, 255, 0.25)", // 透明，帶氣泡
+    baseColor: "rgba(240, 255, 240, 0.25)", // 透明微綠，帶氣泡
     targetColor: "rgba(239, 87, 175, 0.85)", // 微酸：粉紫色
     type: "acid",
     typeName: "微酸性",
     typeBadge: "badge-acid",
     hasBubbles: true,
-    desc: "汽水中溶解了二氧化碳形成碳酸，pH 值通常在 4 左右，會讓指示劑呈現粉紫色。"
+    desc: "無色汽水中溶解了二氧化碳形成碳酸，pH 值通常在 4 左右，會讓指示劑呈現粉紫色。"
   },
   water: {
     id: "water",
     name: "純水",
     icon: "💧",
     ph: 7,
-    baseColor: "rgba(255, 255, 255, 0.2)",
+    baseColor: "rgba(255, 255, 255, 0.1)", // 完全透明
     targetColor: "rgba(142, 68, 173, 0.85)", // 中性：紫色
     type: "neutral",
     typeName: "中性",
@@ -61,7 +61,7 @@ const SOLUTIONS = {
     name: "食鹽水",
     icon: "🧂",
     ph: 7,
-    baseColor: "rgba(255, 255, 255, 0.22)",
+    baseColor: "rgba(255, 255, 255, 0.12)", // 完全透明
     targetColor: "rgba(142, 68, 173, 0.85)", // 中性：紫色
     type: "neutral",
     typeName: "中性",
@@ -73,7 +73,7 @@ const SOLUTIONS = {
     name: "小蘇打水",
     icon: "🧼",
     ph: 9,
-    baseColor: "rgba(255, 255, 255, 0.28)",
+    baseColor: "rgba(245, 245, 250, 0.5)", // 微濁白色
     targetColor: "rgba(26, 188, 156, 0.85)", // 弱鹼：藍綠色
     type: "base",
     typeName: "弱鹼性",
@@ -85,7 +85,7 @@ const SOLUTIONS = {
     name: "肥皂水",
     icon: "🧽",
     ph: 10,
-    baseColor: "rgba(255, 255, 255, 0.35)", // 略微乳白
+    baseColor: "rgba(240, 242, 245, 0.65)", // 乳白色
     targetColor: "rgba(46, 204, 113, 0.85)", // 中鹼：綠色
     type: "base",
     typeName: "中鹼性",
@@ -97,7 +97,7 @@ const SOLUTIONS = {
     name: "清潔劑",
     icon: "🧪",
     ph: 12,
-    baseColor: "rgba(255, 255, 255, 0.25)",
+    baseColor: "rgba(224, 242, 255, 0.55)", // 微淡藍色
     targetColor: "rgba(241, 196, 15, 0.85)", // 強鹼：黃綠色/黃色
     type: "base",
     typeName: "強鹼性",
@@ -343,6 +343,7 @@ function playBoomSound() {
 const rackSlots = [null, null, null, null, null, null]; // 試管架 6 個插槽，儲存試管物件
 let selectedSlotIdx = null; // 當前點擊選中的試管插槽索引
 let currentMode = "normal"; // normal (自由探索) 或 challenge (挑戰)
+let activeTool = null; // "dropper" 或 "probe" (點擊套用模式)
 
 // 拖曳狀態變數
 let draggingType = null; // "solution", "dropper", "probe"
@@ -350,6 +351,41 @@ let draggedData = null; // 攜帶的解決方案 ID 或者是物件
 
 // 氣泡粒子陣列 (汽水試管用)
 let bubbleIntervals = {};
+
+// 彈出視窗動畫支援 (與 Magnet PWA 保持一致，解決模糊卡死問題)
+function openAnimModal(element) {
+  if (!element) return;
+  element.classList.remove("hidden");
+  element.classList.remove("anim-close");
+  // 強制重繪
+  void element.offsetWidth;
+  element.classList.add("anim-open");
+}
+
+function closeAnimModal(element) {
+  if (!element) return;
+  element.classList.remove("anim-open");
+  element.classList.add("anim-close");
+
+  element.addEventListener(
+    "animationend",
+    () => {
+      if (element.classList.contains("anim-close")) {
+        element.classList.add("hidden");
+        element.classList.remove("anim-close");
+      }
+    },
+    { once: true }
+  );
+
+  // 備用定時器安全機制
+  setTimeout(() => {
+    if (element.classList.contains("anim-close")) {
+      element.classList.add("hidden");
+      element.classList.remove("anim-close");
+    }
+  }, 350);
+}
 
 // ---------------------------------------------------------
 // 4. UI 元素抓取與綁定
@@ -359,13 +395,19 @@ document.addEventListener("DOMContentLoaded", () => {
   resetWorkbench();
   // 註冊滴管與探針的觸控支援
   setupTouchControls();
+  
+  // 以優質動畫載入首頁開始畫面
+  const ss = document.getElementById("start-screen");
+  if (ss) {
+    openAnimModal(ss);
+  }
 });
 
 function setupEventHandlers() {
   // 開始畫面按鈕
   document.getElementById("btn-normal-mode").addEventListener("click", () => {
     currentMode = "normal";
-    document.getElementById("start-screen").classList.add("hidden");
+    closeAnimModal(document.getElementById("start-screen"));
     document.getElementById("challenge-hud").classList.add("hidden");
     document.getElementById("detail-ph-val").textContent = "-";
     document.getElementById("detail-type-badge").className = "info-badge badge-empty";
@@ -375,21 +417,21 @@ function setupEventHandlers() {
 
   document.getElementById("btn-challenge-mode").addEventListener("click", () => {
     currentMode = "challenge";
-    document.getElementById("start-screen").classList.add("hidden");
+    closeAnimModal(document.getElementById("start-screen"));
     document.getElementById("challenge-hud").classList.remove("hidden");
     challengeManager.start(5);
   });
 
   document.getElementById("btn-open-instructions").addEventListener("click", () => {
-    document.getElementById("instructions-screen").classList.remove("hidden");
+    openAnimModal(document.getElementById("instructions-screen"));
   });
 
   document.getElementById("btn-close-instructions").addEventListener("click", () => {
-    document.getElementById("instructions-screen").classList.add("hidden");
+    closeAnimModal(document.getElementById("instructions-screen"));
   });
 
   document.getElementById("sidebar-instructions-btn").addEventListener("click", () => {
-    document.getElementById("instructions-screen").classList.remove("hidden");
+    openAnimModal(document.getElementById("instructions-screen"));
   });
 
   // 清除全部按鈕
@@ -408,14 +450,14 @@ function setupEventHandlers() {
     window.location.href = "index.html";
   });
   document.getElementById("btn-results-to-normal").addEventListener("click", () => {
-    document.getElementById("results-screen").classList.add("hidden");
+    closeAnimModal(document.getElementById("results-screen"));
     currentMode = "normal";
     document.getElementById("challenge-hud").classList.add("hidden");
     resetWorkbench();
     updateStatusText("自由探索實驗室中...");
   });
   document.getElementById("btn-restart-challenge").addEventListener("click", () => {
-    document.getElementById("results-screen").classList.add("hidden");
+    closeAnimModal(document.getElementById("results-screen"));
     document.getElementById("challenge-hud").classList.remove("hidden");
     resetWorkbench();
     challengeManager.start(5);
@@ -445,20 +487,52 @@ function setupEventHandlers() {
     });
   });
 
-  // 指示劑滴管拖曳 (PC 瀏覽器原生 drag)
+  // 指示劑滴管拖曳與點擊 (PC 瀏覽器原生 drag 與點擊套用模式)
   const dropperBtn = document.getElementById("dropper-reagent");
   dropperBtn.addEventListener("dragstart", (e) => {
     draggingType = "dropper";
     e.dataTransfer.setData("text/plain", "indicator");
     e.dataTransfer.effectAllowed = "move";
+    activeTool = null;
+    dropperBtn.classList.remove("active-tool");
+    probeBtn.classList.remove("active-tool");
+  });
+  dropperBtn.addEventListener("click", () => {
+    initAudio();
+    if (activeTool === "dropper") {
+      activeTool = null;
+      dropperBtn.classList.remove("active-tool");
+      updateStatusText("已取消滴管工具。");
+    } else {
+      activeTool = "dropper";
+      dropperBtn.classList.add("active-tool");
+      probeBtn.classList.remove("active-tool");
+      updateStatusText("已啟用滴管工具！點擊試管架上的任意試管可直接滴加紫高麗菜汁。");
+    }
   });
 
-  // pH 探針拖曳 (PC 瀏覽器原生 drag)
+  // pH 探針拖曳與點擊 (PC 瀏覽器原生 drag 與點擊套用模式)
   const probeBtn = document.getElementById("probe-tool");
   probeBtn.addEventListener("dragstart", (e) => {
     draggingType = "probe";
     e.dataTransfer.setData("text/plain", "probe");
     e.dataTransfer.effectAllowed = "move";
+    activeTool = null;
+    dropperBtn.classList.remove("active-tool");
+    probeBtn.classList.remove("active-tool");
+  });
+  probeBtn.addEventListener("click", () => {
+    initAudio();
+    if (activeTool === "probe") {
+      activeTool = null;
+      probeBtn.classList.remove("active-tool");
+      updateStatusText("已取消 pH 探針工具。");
+    } else {
+      activeTool = "probe";
+      probeBtn.classList.add("active-tool");
+      dropperBtn.classList.remove("active-tool");
+      updateStatusText("已啟用 pH 探針工具！點擊試管架上的任意試管可直接測量 pH 值。");
+    }
   });
 
   // 試管架插槽事件
@@ -492,10 +566,24 @@ function setupEventHandlers() {
       draggedData = null;
     });
 
-    // 試管點擊選中或拖曳中和反應
+    // 試管點擊選中、混合或點擊套用工具
     slot.addEventListener("click", () => {
+      initAudio();
+      
       if (rackSlots[idx]) {
-        selectSlot(idx);
+        if (activeTool === "dropper") {
+          dropIndicatorToSlot(idx);
+        } else if (activeTool === "probe") {
+          measureSlotPH(idx);
+        } else {
+          // 一般點擊選中試管
+          selectSlot(idx);
+        }
+      } else {
+        // 如果插槽為空，且當前有選中的試管，可以將選中的試管倒入該空插槽（轉移/中和）
+        if (selectedSlotIdx !== null && selectedSlotIdx !== idx && rackSlots[selectedSlotIdx]) {
+          pourAndNeutralize(selectedSlotIdx, idx);
+        }
       }
     });
 
@@ -517,14 +605,14 @@ function setupEventHandlers() {
 
   // 通用對話框按鈕
   document.getElementById("modal-btn-confirm").addEventListener("click", () => {
-    document.getElementById("generic-modal").classList.add("hidden");
+    closeAnimModal(document.getElementById("generic-modal"));
     if (window.modalCallback) {
       window.modalCallback();
       window.modalCallback = null;
     }
   });
   document.getElementById("modal-btn-cancel").addEventListener("click", () => {
-    document.getElementById("generic-modal").classList.add("hidden");
+    closeAnimModal(document.getElementById("generic-modal"));
     window.modalCallback = null;
   });
 }
@@ -811,7 +899,6 @@ function renderTubeAtDOM(slotIdx, tubeObj) {
     <div class="test-tube" style="transform: translateY(0px)">
       <div class="tube-label">${SOLUTIONS[tubeObj.solutionId].name}</div>
       <div class="tube-liquid" style="background-color: ${tubeObj.currentColor}; height: 60%;">
-        <div class="liquid-wave"></div>
       </div>
     </div>
   `;
@@ -1335,7 +1422,7 @@ class ChallengeManager {
   endGame() {
     document.getElementById("challenge-hud").classList.add("hidden");
     const resScreen = document.getElementById("results-screen");
-    resScreen.classList.remove("hidden");
+    openAnimModal(resScreen);
 
     document.getElementById("final-score-val").textContent = this.score;
 
@@ -1532,7 +1619,7 @@ function showCustomAlert(title, message) {
     document.getElementById("modal-title").textContent = title;
     document.getElementById("modal-message").innerHTML = message;
     document.getElementById("modal-btn-cancel").classList.add("hidden");
-    document.getElementById("generic-modal").classList.remove("hidden");
+    openAnimModal(document.getElementById("generic-modal"));
     
     window.modalCallback = () => {
       resolve();
@@ -1544,7 +1631,7 @@ function showConfirmModal(title, message, onConfirm) {
   document.getElementById("modal-title").textContent = title;
   document.getElementById("modal-message").textContent = message;
   document.getElementById("modal-btn-cancel").classList.remove("hidden");
-  document.getElementById("generic-modal").classList.remove("hidden");
+  openAnimModal(document.getElementById("generic-modal"));
   
   window.modalCallback = () => {
     onConfirm();

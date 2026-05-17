@@ -74,9 +74,15 @@
         gap: 6px;
         transition: all 0.2s;
       }
-      .dropper-tool-btn:hover {
+      .dropper-tool-btn:hover, .dropper-tool-btn.active-tool {
         background: #ffeaa7;
         border-color: #f1c40f;
+        box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+      }
+      .probe-tool-btn.active-tool {
+        border-color: #e74c3c !important;
+        box-shadow: 0 0 12px rgba(231, 76, 60, 0.6) !important;
+        transform: scale(1.1);
       }
 
       /* Test Tube Rack Display */
@@ -152,6 +158,10 @@
         border: none;
         background: transparent;
       }
+      /* Ensure pointer events propagate to slot container for stable drop detection */
+      .tube-slot * {
+        pointer-events: none;
+      }
 
       /* Test Tube Element itself */
       .test-tube {
@@ -183,22 +193,8 @@
         position: relative;
         transition: background-color 1s ease, height 0.5s ease;
         border-radius: 0 0 22px 22px;
-      }
-      /* Liquid waves */
-      .liquid-wave {
-        position: absolute;
-        top: -4px;
-        left: 0;
-        width: 200%;
-        height: 10px;
-        background: inherit;
-        opacity: 0.8;
-        border-radius: 40%;
-        animation: wave-flow 4s infinite linear;
-      }
-      @keyframes wave-flow {
-        0% { transform: translateX(0) rotate(0deg); }
-        100% { transform: translateX(-50%) rotate(360deg); }
+        border-top: 3px solid rgba(255, 255, 255, 0.65); /* Realistic meniscus reflection */
+        box-shadow: inset 0 3px 5px rgba(255, 255, 255, 0.2);
       }
 
       /* Solution Label on the tube */
@@ -506,7 +502,7 @@
   <body>
     <div class="container">
       <!-- Start Screen Overlay -->
-      <div id="start-screen" class="overlay">
+      <div id="start-screen" class="overlay hidden">
         <div class="panel start-panel">
           <h1>🧪 小小酸鹼科學家 🧪</h1>
           <p style="font-size:1.2rem; margin-top:10px;">利用神奇的<b>紫高麗菜汁</b>作為天然指示劑，觀察斑斕的顏色變化，探索日常用品的酸鹼奧秘！</p>
@@ -648,9 +644,9 @@
               <div class="icon">🍏</div>
               <span>食醋</span>
             </div>
-            <div class="component-item" draggable="true" data-type="sprite" title="汽水 (微酸性，帶有氣泡)">
-              <div class="icon">🥤</div>
-              <span>汽水</span>
+            <div class="component-item" draggable="true" data-type="sprite" title="無色汽水 (微酸性，帶有氣泡)">
+              <div class="icon">🫧</div>
+              <span>無色汽水</span>
             </div>
             <div class="component-item" draggable="true" data-type="water" title="純水 (中性)">
               <div class="icon">💧</div>
@@ -675,9 +671,9 @@
           </div>
 
           <div class="sidebar-controls">
-            <button id="clear-btn" class="btn danger">清除全部 🗑️</button>
-            <button id="home-btn" class="btn home">回到首頁 🧭</button>
-            <button id="sidebar-instructions-btn" class="btn info">操作說明 📖</button>
+            <button id="clear-btn" class="btn danger">清除全部</button>
+            <button id="home-btn" class="btn home">回到首頁</button>
+            <button id="sidebar-instructions-btn" class="btn info">操作說明</button>
           </div>
         </div>
 
