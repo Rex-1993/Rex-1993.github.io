@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>小小酸鹼科學家 - 紫高麗菜汁實驗</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#4facfe" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* Page-specific premium styles */
+      :root {
+        --cabbage-purple: #8e44ad;
+        --glass-bg: rgba(255, 255, 255, 0.65);
+        --glass-border: rgba(255, 255, 255, 0.4);
+      }
+
+      /* Lab table style for workspace container */
+      .workspace-container.lab-table {
+        background-image: 
+          linear-gradient(rgba(255, 255, 255, 0.8), rgba(240, 244, 248, 0.95)),
+          radial-gradient(circle at 50% 50%, #ffffff 0%, #dbe3eb 100%);
+        border: 3px solid #b0c4de;
+        box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.05);
+      }
+
+      /* Beaker styling in sidebar */
+      .reagent-beaker {
+        background: rgba(255, 255, 255, 0.8);
+        border: 2px solid #bdc3c7;
+        border-radius: 12px;
+        padding: 15px;
+        margin-bottom: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        position: relative;
+        cursor: pointer;
+        transition: transform 0.2s, border-color 0.2s;
+      }
+      .reagent-beaker:hover {
+        transform: translateY(-2px);
+        border-color: var(--cabbage-purple);
+      }
+      .beaker-svg-container {
+        width: 80px;
+        height: 80px;
+        position: relative;
+      }
+      .dropper-tool-btn {
+        background: #f1f2f6;
+        border: 2px solid #ced6e0;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: #2c3e50;
+        cursor: grab;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.2s;
+      }
+      .dropper-tool-btn:hover {
+        background: #ffeaa7;
+        border-color: #f1c40f;
+      }
+
+      /* Test Tube Rack Display */
+      .rack-workbench {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+        padding: 20px;
+        min-height: 250px;
+      }
+      
+      .rack-svg-container {
+        width: 100%;
+        max-width: 650px;
+        height: 220px;
+        position: relative;
+        display: flex;
+        justify-content: space-around;
+        align-items: flex-end;
+        background: rgba(218, 223, 230, 0.6);
+        border-bottom: 12px solid #8c7ae6; /* Beautiful purple wood rack bottom */
+        border-radius: 8px;
+        padding: 0 20px 8px 20px;
+        box-shadow: 0 10px 15px rgba(0,0,0,0.05);
+      }
+      
+      /* Active Dropper dragging follower */
+      #dragged-dropper {
+        position: fixed;
+        width: 60px;
+        height: 120px;
+        pointer-events: none;
+        z-index: 9999;
+        display: none;
+        transform: translate(-50%, -85%);
+        filter: drop-shadow(0 5px 8px rgba(0,0,0,0.25));
+      }
+
+      #dragged-probe {
+        position: fixed;
+        width: 40px;
+        height: 160px;
+        pointer-events: none;
+        z-index: 9999;
+        display: none;
+        transform: translate(-50%, -90%);
+        filter: drop-shadow(0 5px 8px rgba(0,0,0,0.25));
+      }
+
+      /* Test tube slot */
+      .tube-slot {
+        width: 65px;
+        height: 180px;
+        border-radius: 0 0 32px 32px;
+        border: 2px dashed rgba(149, 165, 166, 0.5);
+        background: rgba(255, 255, 255, 0.15);
+        position: relative;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+      }
+      .tube-slot.hovered {
+        border-color: #3498db;
+        background: rgba(52, 152, 219, 0.1);
+      }
+      .tube-slot.has-tube {
+        border: none;
+        background: transparent;
+      }
+
+      /* Test Tube Element itself */
+      .test-tube {
+        width: 50px;
+        height: 170px;
+        border: 3px solid rgba(255, 255, 255, 0.7);
+        border-top: none;
+        border-radius: 0 0 25px 25px;
+        background: rgba(255, 255, 255, 0.15);
+        box-shadow: inset 0 0 8px rgba(255,255,255,0.4), inset -3px 0 5px rgba(0,0,0,0.05);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        overflow: hidden;
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+      .tube-slot.selected .test-tube {
+        transform: translateY(-8px);
+        box-shadow: 0 8px 16px rgba(52, 152, 219, 0.25), inset 0 0 8px rgba(255,255,255,0.6);
+        border-color: #3498db;
+      }
+      
+      /* Liquid styling inside tube */
+      .tube-liquid {
+        width: 100%;
+        height: 60%; /* filled height */
+        background-color: rgba(200, 214, 229, 0.2); /* faint white-grey water */
+        position: relative;
+        transition: background-color 1s ease, height 0.5s ease;
+        border-radius: 0 0 22px 22px;
+      }
+      /* Liquid waves */
+      .liquid-wave {
+        position: absolute;
+        top: -4px;
+        left: 0;
+        width: 200%;
+        height: 10px;
+        background: inherit;
+        opacity: 0.8;
+        border-radius: 40%;
+        animation: wave-flow 4s infinite linear;
+      }
+      @keyframes wave-flow {
+        0% { transform: translateX(0) rotate(0deg); }
+        100% { transform: translateX(-50%) rotate(360deg); }
+      }
+
+      /* Solution Label on the tube */
+      .tube-label {
+        position: absolute;
+        top: 25px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(255, 255, 255, 0.8);
+        border: 1px solid #ced6e0;
+        border-radius: 4px;
+        padding: 2px 6px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: #2c3e50;
+        white-space: nowrap;
+        pointer-events: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      }
+
+      /* pH Spectrum card at bottom of workspace */
+      .spectrum-workbench-footer {
+        width: 100%;
+        background: var(--glass-bg);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        border-radius: 12px;
+        border: 1px solid var(--glass-border);
+        padding: 15px;
+        margin-top: 15px;
+        box-shadow: var(--shadow);
+        position: relative;
+        flex-shrink: 0;
+      }
+      .spectrum-title {
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: #2c3e50;
+        margin-bottom: 8px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .spectrum-bar {
+        height: 25px;
+        border-radius: 8px;
+        background: linear-gradient(to right, 
+          #ff3f34 0%,   /* pH 2: Red */
+          #ff5e57 15%,  /* pH 3: Pink-Red */
+          #ef57af 30%,  /* pH 4: Pink-Purple */
+          #9b59b6 50%,  /* pH 7: Purple (neutral) */
+          #1abc9c 70%,  /* pH 9: Blue-Green */
+          #2ecc71 85%,  /* pH 10: Green */
+          #f1c40f 100%  /* pH 12: Yellow-Green/Yellow */
+        );
+        position: relative;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+      }
+      .spectrum-marker {
+        position: absolute;
+        top: -6px;
+        left: 50%;
+        width: 16px;
+        height: 37px;
+        transform: translateX(-50%);
+        pointer-events: none;
+        transition: left 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .marker-arrow {
+        width: 0;
+        height: 0;
+        border-left: 8px solid transparent;
+        border-right: 8px solid transparent;
+        border-top: 10px solid #2c3e50; /* pointing down */
+      }
+      .marker-line {
+        width: 4px;
+        height: 27px;
+        background: #2c3e50;
+        border-radius: 2px;
+      }
+      .spectrum-labels {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 5px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        color: #57606f;
+        padding: 0 5px;
+      }
+
+      /* Lab info panel below test tubes */
+      .lab-info-panel {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        background: #f8f9fa;
+        border: 1px solid #e9ecef;
+        border-radius: 8px;
+        padding: 10px 15px;
+        margin-top: 10px;
+        font-size: 0.9rem;
+        color: #2c3e50;
+        flex-shrink: 0;
+      }
+      .info-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .info-value {
+        font-weight: bold;
+        color: var(--cabbage-purple);
+      }
+      .info-badge {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        color: white;
+      }
+      .badge-acid { background-color: #ff4757; }
+      .badge-neutral { background-color: #9b59b6; }
+      .badge-base { background-color: #2ed573; }
+      .badge-empty { background-color: #7f8c8d; }
+
+      /* Floating pH Meter Probe Tool */
+      .probe-tool-container {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        z-index: 10;
+      }
+      .probe-tool-btn {
+        background: #2c3e50;
+        border: 2px solid #34495e;
+        color: #ecf0f1;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        font-size: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: grab;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        transition: transform 0.2s;
+      }
+      .probe-tool-btn:hover {
+        transform: scale(1.08);
+      }
+      .probe-label {
+        font-size: 0.75rem;
+        font-weight: bold;
+        background: rgba(0,0,0,0.7);
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+
+      /* Challenge Quest Styles */
+      .quest-hud {
+        border-color: var(--cabbage-purple) !important;
+      }
+      .quest-indicator {
+        display: inline-block;
+        background: var(--cabbage-purple);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.8rem;
+        font-weight: bold;
+        margin-right: 5px;
+      }
+      .quiz-choices {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        width: 100%;
+        margin-top: 15px;
+      }
+      .choice-btn {
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 0.95rem;
+        font-weight: bold;
+        color: #2d3748;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .choice-btn:hover {
+        background: #f7fafc;
+        border-color: var(--cabbage-purple);
+      }
+      .choice-badge {
+        background: #edf2f7;
+        color: #4a5568;
+        border-radius: 50%;
+        width: 25px;
+        height: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.85rem;
+        flex-shrink: 0;
+      }
+
+      /* Bubble Particle effects in workspace for sprite carbonation */
+      .bubble-particle {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.4);
+        border-radius: 50%;
+        pointer-events: none;
+        animation: rise-bubble 2s infinite linear;
+      }
+      @keyframes rise-bubble {
+        0% { transform: translateY(0); opacity: 0; }
+        10% { opacity: 0.6; }
+        90% { opacity: 0.6; }
+        100% { transform: translateY(-70px); opacity: 0; }
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 960px) {
+        .rack-svg-container {
+          height: 160px;
+        }
+        .tube-slot {
+          width: 48px;
+          height: 130px;
+        }
+        .test-tube {
+          width: 38px;
+          height: 120px;
+        }
+        .tube-label {
+          top: 15px;
+          font-size: 0.65rem;
+          padding: 1px 4px;
+        }
+        .probe-tool-container {
+          top: 10px;
+          right: 10px;
+        }
+        .probe-tool-btn {
+          width: 40px;
+          height: 40px;
+          font-size: 1.2rem;
+        }
+        .spectrum-workbench-footer {
+          padding: 8px;
+          margin-top: 8px;
+        }
+        .spectrum-bar {
+          height: 18px;
+        }
+        .spectrum-marker {
+          top: -4px;
+          height: 26px;
+        }
+        .marker-arrow {
+          border-left: 6px solid transparent;
+          border-right: 6px solid transparent;
+          border-top: 8px solid #2c3e50;
+        }
+        .marker-line {
+          width: 3px;
+          height: 18px;
+        }
+        .lab-info-panel {
+          padding: 6px 10px;
+          font-size: 0.8rem;
+          margin-top: 5px;
+        }
+        .reagent-beaker {
+          padding: 8px;
+          margin-bottom: 10px;
+          gap: 5px;
+        }
+        .beaker-svg-container {
+          width: 50px;
+          height: 50px;
+        }
+        .dropper-tool-btn {
+          padding: 4px 8px;
+          font-size: 0.8rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Start Screen Overlay -->
+      <div id="start-screen" class="overlay">
+        <div class="panel start-panel">
+          <h1>🧪 小小酸鹼科學家 🧪</h1>
+          <p style="font-size:1.2rem; margin-top:10px;">利用神奇的<b>紫高麗菜汁</b>作為天然指示劑，觀察斑斕的顏色變化，探索日常用品的酸鹼奧秘！</p>
+          <div class="mode-selection">
+            <button id="btn-normal-mode" class="btn-primary-large">
+              自由探索實驗室
+            </button>
+            <button id="btn-challenge-mode" class="btn-secondary-large">
+              挑戰酸鹼關卡
+            </button>
+          </div>
+          <div class="mode-selection" style="margin-top: 10px;">
+            <button id="btn-open-instructions" class="btn-info-large" style="min-width: 220px;">
+              實驗說明書 📖
+            </button>
+            <a href="index.html" class="btn-home-large" style="min-width: 220px;">
+              回到主頁 🧭
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instructions Modal -->
+      <div id="instructions-screen" class="overlay hidden">
+        <div class="panel instructions-panel">
+          <h2>📖 實驗說明書</h2>
+          <div class="instructions-content">
+            <h3>🔬 認識天然酸鹼指示劑</h3>
+            <p>
+              <strong>紫高麗菜</strong>（又稱紅甘藍）含有豐富的<strong>花青素</strong>。這種天然色素在不同的酸鹼度（pH 值）下，分子結構會發生改變，進而反射出截然不同的顏色：
+            </p>
+            <ul>
+              <li>🔴 <strong>強酸性 (pH 2)</strong>：呈現鮮豔的<strong>紅色</strong>。</li>
+              <li>💖 <strong>弱酸性 (pH 3~4)</strong>：呈現美麗的<strong>粉紅色</strong>或<strong>紫紅色</strong>。</li>
+              <li>💜 <strong>中性 (pH 7)</strong>：維持原始的<strong>紫色</strong>或帶藍紫色。</li>
+              <li>💙 <strong>弱鹼性 (pH 9)</strong>：呈現明亮的<strong>藍綠色</strong>。</li>
+              <li>💚 <strong>中鹼性 (pH 10)</strong>：呈現鮮綠的<strong>綠色</strong>。</li>
+              <li>💛 <strong>強鹼性 (pH 12)</strong>：呈現明亮的<strong>黃綠色</strong>至<strong>黃色</strong>。</li>
+            </ul>
+
+            <h3>🎮 實驗室操作指引</h3>
+            <ul>
+              <li>
+                <strong>放置試管</strong>：從左側「溶液櫃」點擊或拖曳日常生活用品（如檸檬汁、肥皂水）到右側的試管架上。
+              </li>
+              <li>
+                <strong>加入指示劑</strong>：按住左側的「紫高麗菜汁滴管」拖曳至試管上方，釋放以滴入紫高麗菜汁。觀察神奇的混色漸變特效！
+              </li>
+              <li>
+                <strong>pH 計探針</strong>：按住右側圓形的 🌡️ <strong>pH計探針</strong> 拖曳浸入試管中，可精準讀取溶液的酸鹼值與詳細屬性。
+              </li>
+              <li>
+                <strong>酸鹼中和實驗</strong>：您可以將試管架上的溶液相互倒入混合！例如，將檸檬汁倒入肥皂水試管中，看看顏色是否會變回代表中性的紫色？
+              </li>
+              <li>
+                <strong>清理桌面</strong>：點擊「清除全部」或對試管按右鍵（手機長按）可以清空特定試管，重新開始實驗。
+              </li>
+            </ul>
+          </div>
+          <button id="btn-close-instructions" class="btn-primary" style="width:200px;">理解了，開始實驗！</button>
+        </div>
+      </div>
+
+      <!-- Generic custom dialog modal -->
+      <div id="generic-modal" class="overlay hidden">
+        <div class="panel modal-panel">
+          <h2 id="modal-title">實驗室提示</h2>
+          <p id="modal-message" style="margin: 15px 0; line-height: 1.6;">訊息內容</p>
+          <div class="modal-buttons" style="display: flex; gap: 10px; width: 100%;">
+            <button id="modal-btn-confirm" class="btn primary">確定</button>
+            <button id="modal-btn-cancel" class="btn secondary hidden">取消</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Challenge Quest Results Overlay -->
+      <div id="results-screen" class="overlay hidden">
+        <div class="panel modal-panel" style="max-width: 650px;">
+          <h2>🏆 挑戰結算報告</h2>
+          <p style="font-size: 1.2rem; margin: 10px 0;">您的挑戰成績如下：</p>
+          <div style="background: #f8f9fa; border-radius: 12px; padding: 15px 25px; margin: 10px 0; width:100%;">
+            <span style="font-size: 3rem; font-weight: bold; color: #8e44ad;" id="final-score-val">0</span>
+            <span style="font-size: 1.5rem; color: #7f8c8d;"> / 5 題</span>
+          </div>
+          
+          <div style="width: 100%; text-align: left; max-height: 200px; overflow-y: auto; margin: 15px 0; padding-right: 5px;">
+            <h4 style="color:#2c3e50; margin-bottom: 8px;">📊 學力診斷與弱點分析：</h4>
+            <div id="weakness-report" style="font-size: 0.95rem; line-height: 1.6; color:#57606f;">
+              讀取診斷結果中...
+            </div>
+            <div id="mistakes-list" style="margin-top: 10px;"></div>
+          </div>
+
+          <div style="display:flex; gap:10px; width:100%;">
+            <button id="btn-restart-challenge" class="btn primary">再戰一次 🚀</button>
+            <button id="btn-results-to-normal" class="btn success">自由實驗室 🧪</button>
+            <button id="btn-results-home" class="btn home">回到首頁 🧭</button>
+          </div>
+        </div>
+      </div>
+
+      <header>
+        <h1>🧪 小小酸鹼科學家 🧪</h1>
+        <p>滴入紫高麗菜汁，調配並探究奇妙的酸鹼變色與中和反應！</p>
+      </header>
+
+      <main>
+        <div class="sidebar">
+          <!-- Reagent Dropper Section -->
+          <h2>1. 酸鹼指示劑</h2>
+          <div class="reagent-beaker" id="indicator-source" title="點擊或拖曳滴管吸取紫高麗菜汁">
+            <div class="beaker-svg-container">
+              <!-- Animated SVG beaker with purple liquid -->
+              <svg width="100%" height="100%" viewBox="0 0 80 80">
+                <!-- Glass Beaker contour -->
+                <path d="M 20,10 L 20,20 L 15,20 L 15,70 A 5,5 0 0,0 20,75 L 60,75 A 5,5 0 0,0 65,70 L 65,20 L 60,20 L 60,10" fill="none" stroke="#7f8c8d" stroke-width="3" />
+                <line x1="20" y1="10" x2="60" y2="10" stroke="#7f8c8d" stroke-width="3" />
+                <!-- Graduation ticks -->
+                <line x1="20" y1="30" x2="30" y2="30" stroke="#bdc3c7" stroke-width="2" />
+                <line x1="20" y1="45" x2="27" y2="45" stroke="#bdc3c7" stroke-width="2" />
+                <line x1="20" y1="60" x2="30" y2="60" stroke="#bdc3c7" stroke-width="2" />
+                <!-- Purple Reagent Liquid inside -->
+                <path d="M 17.5,35 Q 25,37 32.5,35 T 47.5,35 Q 55,37 62.5,35 L 62.5,70 A 2,2 0 0,1 60.5,72 L 19.5,72 A 2,2 0 0,1 17.5,70 Z" fill="#8e44ad" opacity="0.85" />
+              </svg>
+            </div>
+            <div class="dropper-tool-btn" id="dropper-reagent" draggable="true">
+              💧 紫高麗菜汁滴管
+            </div>
+          </div>
+
+          <!-- Household solutions cabinets -->
+          <h2>2. 待測溶液櫃</h2>
+          <div class="toolbox">
+            <div class="component-item" draggable="true" data-type="lemon" title="檸檬汁 (強酸性)">
+              <div class="icon">🍋</div>
+              <span>檸檬汁</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="vinegar" title="食醋 (弱酸性)">
+              <div class="icon">🍏</div>
+              <span>食醋</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="sprite" title="汽水 (微酸性，帶有氣泡)">
+              <div class="icon">🥤</div>
+              <span>汽水</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="water" title="純水 (中性)">
+              <div class="icon">💧</div>
+              <span>純水</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="salt" title="食鹽水 (中性)">
+              <div class="icon">🧂</div>
+              <span>食鹽水</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="soda" title="小蘇打水 (弱鹼性)">
+              <div class="icon">🧼</div>
+              <span>小蘇打水</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="soap" title="肥皂水 (中鹼性)">
+              <div class="icon">🧽</div>
+              <span>肥皂水</span>
+            </div>
+            <div class="component-item" draggable="true" data-type="lime" title="清潔劑 (強鹼性)">
+              <div class="icon">🧪</div>
+              <span>清潔劑</span>
+            </div>
+          </div>
+
+          <div class="sidebar-controls">
+            <button id="clear-btn" class="btn danger">清除全部 🗑️</button>
+            <button id="home-btn" class="btn home">回到首頁 🧭</button>
+            <button id="sidebar-instructions-btn" class="btn info">操作說明 📖</button>
+          </div>
+        </div>
+
+        <div class="workspace-container lab-table">
+          <!-- Quiz HUD Overlay (Hidden by default, shown in challenge mode) -->
+          <div id="challenge-hud" class="hidden quest-hud">
+            <div class="hud-item" style="border-bottom: 1px dashed #ced6e0; padding-bottom: 10px; margin-bottom: 5px;">
+              <span class="label" style="background-color: #8e44ad;">酸鹼科學挑戰賽 🏆</span>
+              <div>
+                <span id="score-val">0</span> / <span id="total-val">5</span> 題
+              </div>
+            </div>
+            <div class="hud-item">
+              <span class="label" style="background-color: #e74c3c;">任務目標 🎯</span>
+              <div id="question-text" style="font-weight: bold; font-size: 1.1rem; color: #2c3e50; border-left: 5px solid #8e44ad; background: #f8f9fa;">
+                關卡生成中...
+              </div>
+            </div>
+            <!-- Dynamic Choice container for MCQ questions -->
+            <div id="quiz-choices-container" class="hidden">
+              <div class="quiz-choices" id="quiz-choices-grid"></div>
+            </div>
+            <!-- Skip or helper buttons if needed -->
+            <div style="display:flex; justify-content: flex-end; width:100%; margin-top:5px;" id="quest-action-row">
+              <button id="btn-submit-quest" class="btn success" style="width: 140px; padding: 8px 15px; font-size:0.9rem;">送出實驗結果 🔬</button>
+            </div>
+          </div>
+
+          <!-- Main Workbench showing test tube rack -->
+          <div class="rack-workbench">
+            <div class="probe-tool-container" title="拖曳探針置入試管中測量 pH 值">
+              <div class="probe-tool-btn" id="probe-tool" draggable="true">🌡️</div>
+              <div class="probe-label">pH 探針</div>
+            </div>
+
+            <!-- Rack with slots -->
+            <div class="rack-svg-container" id="rack-container">
+              <!-- Tube Slot 1 -->
+              <div class="tube-slot" data-slot="0"><div class="slot-bg-icon" style="font-size:1.5rem; opacity:0.25; margin-bottom: 70px;">1</div></div>
+              <!-- Tube Slot 2 -->
+              <div class="tube-slot" data-slot="1"><div class="slot-bg-icon" style="font-size:1.5rem; opacity:0.25; margin-bottom: 70px;">2</div></div>
+              <!-- Tube Slot 3 -->
+              <div class="tube-slot" data-slot="2"><div class="slot-bg-icon" style="font-size:1.5rem; opacity:0.25; margin-bottom: 70px;">3</div></div>
+              <!-- Tube Slot 4 -->
+              <div class="tube-slot" data-slot="3"><div class="slot-bg-icon" style="font-size:1.5rem; opacity:0.25; margin-bottom: 70px;">4</div></div>
+              <!-- Tube Slot 5 -->
+              <div class="tube-slot" data-slot="4"><div class="slot-bg-icon" style="font-size:1.5rem; opacity:0.25; margin-bottom: 70px;">5</div></div>
+              <!-- Tube Slot 6 -->
+              <div class="tube-slot" data-slot="5"><div class="slot-bg-icon" style="font-size:1.5rem; opacity:0.25; margin-bottom: 70px;">6</div></div>
+            </div>
+
+            <!-- Dynamic falling droplet canvas for dropping juice -->
+            <canvas id="droplet-canvas" style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:99;"></canvas>
+            
+            <div id="status-display">目前狀態: 請將溶液放置到試管架中開始實驗...</div>
+          </div>
+
+          <!-- Dynamic detailed information panel of selected tube -->
+          <div class="lab-info-panel" id="tube-details-panel">
+            <div class="info-item">
+              <span>選中試管：</span>
+              <span class="info-value" id="detail-name">無 (請點擊選中試管)</span>
+            </div>
+            <div class="info-item">
+              <span>指示劑：</span>
+              <span class="info-value" id="detail-indicator">無</span>
+            </div>
+            <div class="info-item">
+              <span>酸鹼屬性：</span>
+              <span id="detail-type-badge" class="info-badge badge-empty">未測量</span>
+            </div>
+            <div class="info-item">
+              <span>實測 pH 值：</span>
+              <span class="info-value" id="detail-ph-val">-</span>
+            </div>
+          </div>
+
+          <!-- pH spectrum footer reference card -->
+          <div class="spectrum-workbench-footer">
+            <div class="spectrum-title">
+              <span>🌈 紫高麗菜汁 pH 值變色對照表</span>
+              <span id="marker-ph-label" style="color:var(--cabbage-purple); font-weight:bold; font-size:0.85rem;"></span>
+            </div>
+            <div class="spectrum-bar" id="spectrum-color-bar">
+              <!-- Sliding indicator marker -->
+              <div class="spectrum-marker" id="spect-marker" style="left: 50%; display:none;">
+                <div class="marker-arrow"></div>
+                <div class="marker-line"></div>
+              </div>
+            </div>
+            <div class="spectrum-labels">
+              <span style="color:#ff3f34;">pH 2 (酸)</span>
+              <span style="color:#ef57af;">pH 4 (弱酸)</span>
+              <span style="color:#9b59b6;">pH 7 (中性)</span>
+              <span style="color:#1abc9c;">pH 9 (弱鹼)</span>
+              <span style="color:#2ecc71;">pH 10 (中鹼)</span>
+              <span style="color:#f1c40f;">pH 12 (強鹼)</span>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Dragged dropper visual indicator container -->
+    <div id="dragged-dropper">
+      <svg width="60" height="120" viewBox="0 0 60 120">
+        <!-- Rubber Bulb (Red-brown) -->
+        <path d="M 20,40 A 10,10 0 0,1 40,40 C 40,50 35,55 35,60 L 25,60 C 25,55 20,50 20,40 Z" fill="#e74c3c" stroke="#2c3e50" stroke-width="2" />
+        <ellipse cx="30" cy="30" rx="8" ry="4" fill="rgba(255,255,255,0.25)" />
+        <!-- Glass pipet body -->
+        <rect x="26" y="60" width="8" height="40" fill="rgba(255,255,255,0.7)" stroke="#2c3e50" stroke-width="2" />
+        <!-- Tapered tip -->
+        <path d="M 26,100 L 28,115 A 2,2 0 0,0 32,115 L 34,100 Z" fill="rgba(255,255,255,0.7)" stroke="#2c3e50" stroke-width="2" />
+        <!-- Dynamic Liquid inside glass tube (Purple cabbage juice) -->
+        <path id="dropper-fluid" d="M 27,80 L 33,80 L 33,100 L 32,109 L 28,109 L 27,100 Z" fill="#8e44ad" opacity="0.8" />
+        <!-- Liquid drop ready at tip -->
+        <circle cx="30" cy="117" r="2.5" fill="#8e44ad" id="dropper-tip-drop" opacity="0.9" />
+      </svg>
+    </div>
+
+    <!-- Dragged probe visual indicator container -->
+    <div id="dragged-probe">
+      <svg width="40" height="160" viewBox="0 0 40 160">
+        <!-- Rubber handle (Dark Gray) -->
+        <rect x="15" y="10" width="10" height="40" rx="4" fill="#34495e" stroke="#2c3e50" stroke-width="2" />
+        <!-- Metal rod -->
+        <rect x="18" y="50" width="4" height="85" fill="#bdc3c7" stroke="#7f8c8d" stroke-width="1" />
+        <!-- Glass probe tip bulb -->
+        <circle cx="20" cy="140" r="8" fill="rgba(52, 152, 219, 0.4)" stroke="#2980b9" stroke-width="2" />
+        <!-- Inner measurement sensor wire -->
+        <line x1="20" y1="50" x2="20" y2="138" stroke="#e74c3c" stroke-width="1.5" />
+        <circle cx="20" cy="138" r="2.5" fill="#e74c3c" />
+      </svg>
+    </div>
+
+    <script src="cabbage01.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("./sw.js")
+          .then(() => console.log("Service Worker Registered"))
+          .catch((err) => console.log("SW Failed", err));
+      }
+    </script>
+  </body>
+</html>
