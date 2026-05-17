@@ -367,6 +367,46 @@
       .quest-hud {
         border-color: var(--cabbage-purple) !important;
       }
+      /* Make challenge HUD extremely compact to prevent overflow/cutting off test tubes */
+      #challenge-hud {
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        gap: 6px;
+      }
+      #challenge-hud .hud-item {
+        gap: 4px;
+      }
+      #challenge-hud .hud-item:first-child {
+        padding-bottom: 6px;
+        margin-bottom: 2px;
+      }
+      #question-text {
+        font-size: 0.95rem;
+        padding: 8px 10px;
+        min-height: auto;
+      }
+      .quiz-choices {
+        margin-top: 8px;
+        gap: 6px;
+      }
+      .choice-btn {
+        padding: 8px 10px;
+        font-size: 0.88rem;
+      }
+      
+      /* Challenge mode compact layout adjustments to prevent clipping */
+      .in-challenge .rack-workbench {
+        padding: 5px 10px;
+        min-height: 220px;
+      }
+      .in-challenge .lab-info-panel {
+        margin-top: 5px;
+        padding: 6px 12px;
+      }
+      .in-challenge .spectrum-workbench-footer {
+        margin-top: 8px;
+        padding: 8px 12px;
+      }
       .quest-indicator {
         display: inline-block;
         background: var(--cabbage-purple);
@@ -516,10 +556,10 @@
           </div>
           <div class="mode-selection" style="margin-top: 10px;">
             <button id="btn-open-instructions" class="btn-info-large" style="min-width: 220px;">
-              實驗說明書 📖
+              實驗說明書
             </button>
             <a href="index.html" class="btn-home-large" style="min-width: 220px;">
-              回到主頁 🧭
+              回到主頁
             </a>
           </div>
         </div>
@@ -562,7 +602,7 @@
               </li>
             </ul>
           </div>
-          <button id="btn-close-instructions" class="btn-primary" style="width:200px;">理解了，開始實驗！</button>
+          <button id="btn-close-instructions" class="btn-primary" style="width:200px;">關閉</button>
         </div>
       </div>
 
@@ -599,7 +639,7 @@
           <div style="display:flex; gap:10px; width:100%;">
             <button id="btn-restart-challenge" class="btn primary">再戰一次 🚀</button>
             <button id="btn-results-to-normal" class="btn success">自由實驗室 🧪</button>
-            <button id="btn-results-home" class="btn home">回到首頁 🧭</button>
+            <button id="btn-results-home" class="btn home">回到首頁</button>
           </div>
         </div>
       </div>
@@ -664,9 +704,9 @@
               <div class="icon">🧽</div>
               <span>肥皂水</span>
             </div>
-            <div class="component-item" draggable="true" data-type="lime" title="清潔劑 (強鹼性)">
+            <div class="component-item" draggable="true" data-type="lime" title="漂白水 (強鹼性)">
               <div class="icon">🧪</div>
-              <span>清潔劑</span>
+              <span>漂白水</span>
             </div>
           </div>
 
@@ -809,7 +849,7 @@
       </svg>
     </div>
 
-    <script src="cabbage01.js"></script>
+    <script src="cabbage01.js?v=5"></script>
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker

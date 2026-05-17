@@ -94,7 +94,7 @@ const SOLUTIONS = {
   },
   lime: {
     id: "lime",
-    name: "清潔劑",
+    name: "漂白水",
     icon: "🧪",
     ph: 12,
     baseColor: "rgba(224, 242, 255, 0.55)", // 微淡藍色
@@ -102,7 +102,7 @@ const SOLUTIONS = {
     type: "base",
     typeName: "強鹼性",
     typeBadge: "badge-base",
-    desc: "家用清潔劑通常含有鹼性物質以利去污，pH 值達 12，強鹼會將花青素結構徹底破壞，呈現黃色。"
+    desc: "漂白水（次氯酸鈉溶液）呈強鹼性，pH 值高達 12。它能將紫高麗菜汁中的花青素分子結構破壞，使其褪色或變為鮮黃色。"
   }
 };
 
@@ -407,6 +407,7 @@ function setupEventHandlers() {
   // 開始畫面按鈕
   document.getElementById("btn-normal-mode").addEventListener("click", () => {
     currentMode = "normal";
+    document.body.classList.remove("in-challenge");
     closeAnimModal(document.getElementById("start-screen"));
     document.getElementById("challenge-hud").classList.add("hidden");
     document.getElementById("detail-ph-val").textContent = "-";
@@ -417,6 +418,7 @@ function setupEventHandlers() {
 
   document.getElementById("btn-challenge-mode").addEventListener("click", () => {
     currentMode = "challenge";
+    document.body.classList.add("in-challenge");
     closeAnimModal(document.getElementById("start-screen"));
     document.getElementById("challenge-hud").classList.remove("hidden");
     challengeManager.start(5);
@@ -444,20 +446,34 @@ function setupEventHandlers() {
 
   // 回到首頁與結算頁按鈕
   document.getElementById("home-btn").addEventListener("click", () => {
-    window.location.href = "index.html";
+    initAudio();
+    showConfirmModal("回到起始畫面", "您確定要結束當前的實驗，回到遊戲首頁嗎？", () => {
+      document.body.classList.remove("in-challenge");
+      document.getElementById("challenge-hud").classList.add("hidden");
+      resetWorkbench();
+      openAnimModal(document.getElementById("start-screen"));
+    });
   });
   document.getElementById("btn-results-home").addEventListener("click", () => {
-    window.location.href = "index.html";
+    initAudio();
+    closeAnimModal(document.getElementById("results-screen"));
+    document.body.classList.remove("in-challenge");
+    document.getElementById("challenge-hud").classList.add("hidden");
+    resetWorkbench();
+    openAnimModal(document.getElementById("start-screen"));
   });
   document.getElementById("btn-results-to-normal").addEventListener("click", () => {
     closeAnimModal(document.getElementById("results-screen"));
     currentMode = "normal";
+    document.body.classList.remove("in-challenge");
     document.getElementById("challenge-hud").classList.add("hidden");
     resetWorkbench();
     updateStatusText("自由探索實驗室中...");
   });
   document.getElementById("btn-restart-challenge").addEventListener("click", () => {
     closeAnimModal(document.getElementById("results-screen"));
+    currentMode = "challenge";
+    document.body.classList.add("in-challenge");
     document.getElementById("challenge-hud").classList.remove("hidden");
     resetWorkbench();
     challengeManager.start(5);
@@ -1295,7 +1311,7 @@ class ChallengeManager {
       {
         id: 5,
         type: "neutralization",
-        text: "【關卡 5：終極酸鹼中和調配師】請在試管 1 中先倒入【檸檬汁】並加指示劑（強酸紅，pH 2），接著倒入【清潔劑】（強鹼黃，pH 12）進行酸鹼中和，將混合液 pH 調整中和至中性偏酸/偏鹼的紫色～藍綠色區間 (pH 6~9)！",
+        text: "【關卡 5：終極酸鹼中和調配師】請在試管 1 中先倒入【檸檬汁】並加指示劑（強酸紅，pH 2），接著倒入【漂白水】（強鹼黃，pH 12）進行酸鹼中和，將混合液 pH 調整中和至中性偏酸/偏鹼的紫色～藍綠色區間 (pH 6~9)！",
         verify: () => {
           // 檢查試管 1 的混合與 pH 值
           const tube = rackSlots[0];
@@ -1306,7 +1322,7 @@ class ChallengeManager {
           const hasBase = tube.mixedList.includes("lime");
 
           if (!hasAcid || !hasBase) {
-            return { ok: false, reason: "您必須在同一試管中混合『檸檬汁』與『清潔劑』來展示中和作用！" };
+            return { ok: false, reason: "您必須在同一試管中混合『檸檬汁』與『漂白水』來展示中和作用！" };
           }
 
           const targetPH = tube.currentPH;
@@ -1314,7 +1330,7 @@ class ChallengeManager {
           
           return {
             ok: matched,
-            reason: `混合液當前 pH 為 ${targetPH}，${targetPH < 6 ? "依然偏酸性，請加一點點鹼性的清潔劑！" : "已經太偏鹼性了，中和過頭了，請倒掉重新微調調配！"}`
+            reason: `混合液當前 pH 為 ${targetPH}，${targetPH < 6 ? "依然偏酸性，請加一點點鹼性的漂白水！" : "已經太偏鹼性了，中和過頭了，請倒掉重新微調調配！"}`
           };
         }
       }
