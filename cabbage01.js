@@ -534,52 +534,30 @@ function setupEventHandlers() {
     });
   });
 
-  // 指示劑滴管拖曳與點擊 (PC 瀏覽器原生 drag 與點擊套用模式)
-  const dropperBtn = document.getElementById("dropper-reagent");
+  // 指示劑燒杯拖曳與點擊 (整個紫高麗菜汁圖示區域均可拖曳生效)
+  const dropperBtn = document.getElementById("indicator-source");
   dropperBtn.addEventListener("dragstart", (e) => {
     draggingType = "dropper";
     e.dataTransfer.setData("text/plain", "indicator");
     e.dataTransfer.effectAllowed = "move";
     activeTool = null;
-    dropperBtn.classList.remove("active-tool");
-    probeBtn.classList.remove("active-tool");
   });
   dropperBtn.addEventListener("click", () => {
     initAudio();
-    if (activeTool === "dropper") {
-      activeTool = null;
-      dropperBtn.classList.remove("active-tool");
-      updateStatusText("已取消滴管工具。");
-    } else {
-      activeTool = "dropper";
-      dropperBtn.classList.add("active-tool");
-      probeBtn.classList.remove("active-tool");
-      updateStatusText("已啟用滴管工具！點擊試管架上的任意試管可直接滴加紫高麗菜汁。");
-    }
+    updateStatusText("請直接「拖曳」紫高麗菜汁燒杯至試管中進行滴加！");
   });
 
-  // pH 探針拖曳與點擊 (PC 瀏覽器原生 drag 與點擊套用模式)
+  // pH 探針拖曳與點擊
   const probeBtn = document.getElementById("probe-tool");
   probeBtn.addEventListener("dragstart", (e) => {
     draggingType = "probe";
     e.dataTransfer.setData("text/plain", "probe");
     e.dataTransfer.effectAllowed = "move";
     activeTool = null;
-    dropperBtn.classList.remove("active-tool");
-    probeBtn.classList.remove("active-tool");
   });
   probeBtn.addEventListener("click", () => {
     initAudio();
-    if (activeTool === "probe") {
-      activeTool = null;
-      probeBtn.classList.remove("active-tool");
-      updateStatusText("已取消 pH 探針工具。");
-    } else {
-      activeTool = "probe";
-      probeBtn.classList.add("active-tool");
-      dropperBtn.classList.remove("active-tool");
-      updateStatusText("已啟用 pH 探針工具！點擊試管架上的任意試管可直接測量 pH 值。");
-    }
+    updateStatusText("請直接「拖曳」pH 探針至試管中進行測量！");
   });
 
   // 試管架插槽事件
@@ -668,7 +646,7 @@ function setupEventHandlers() {
 // 5. 行動端觸控支援 (Touch Controls - Highly Premium)
 // ---------------------------------------------------------
 function setupTouchControls() {
-  const dropperBtn = document.getElementById("dropper-reagent");
+  const dropperBtn = document.getElementById("indicator-source");
   const probeBtn = document.getElementById("probe-tool");
   
   const touchState = {

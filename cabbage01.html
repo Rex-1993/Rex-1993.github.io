@@ -48,7 +48,7 @@
         gap: 10px;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
         position: relative;
-        cursor: pointer;
+        cursor: grab;
         transition: transform 0.2s, border-color 0.2s;
       }
       .reagent-beaker:hover {
@@ -955,7 +955,7 @@
         <div class="sidebar">
           <!-- Reagent Dropper Section -->
           <h2>1. 酸鹼指示劑</h2>
-          <div class="reagent-beaker" id="indicator-source" title="點擊或拖曳滴管吸取紫高麗菜汁">
+          <div class="reagent-beaker" id="indicator-source" draggable="true" title="拖曳紫高麗菜汁滴管至試管中進行滴加">
             <div class="beaker-svg-container">
               <!-- Animated SVG beaker with purple liquid -->
               <svg width="100%" height="100%" viewBox="0 0 80 80">
@@ -1156,7 +1156,7 @@
       🍋
     </div>
 
-    <script src="cabbage01.js?v=9"></script>
+    <script src="cabbage01.js?v=10"></script>
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
