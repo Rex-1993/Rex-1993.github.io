@@ -767,10 +767,20 @@ function setupTouchControls() {
       const dy = touch.clientY - touchStartPos.y;
       const dist = Math.sqrt(dx * dx + dy * dy);
 
-      // 如果移動距離大於 12px，且為垂直主導的滑動（代表想要往上拖進試管架），才啟動拖曳
+      // 如果移動距離大於 12px，根據螢幕直橫向狀態分流「拖曳使用」與「原生滾動卷軸」
       if (dist > 12 && !isDragging) {
-        const isVertical = Math.abs(dy) > Math.abs(dx) * 1.15;
-        if (isVertical) {
+        const isLandscape = window.innerWidth > window.innerHeight;
+        let shouldDrag = false;
+        
+        if (isLandscape) {
+          // 橫屏 (側邊直立抽屜)：水平向右滑動為主導拖曳 (拉進右側反應架)；垂直滑動則放行做上下滾動溶液櫃
+          shouldDrag = Math.abs(dx) > Math.abs(dy) * 1.15;
+        } else {
+          // 直屏 (底部橫向抽屜)：垂直向上滑動為主導拖曳 (拉進上方反應架)；水平滑動則放行做左右滾動溶液列
+          shouldDrag = Math.abs(dy) > Math.abs(dx) * 1.15;
+        }
+
+        if (shouldDrag) {
           isDragging = true;
           draggingType = "solution";
           draggedData = type;

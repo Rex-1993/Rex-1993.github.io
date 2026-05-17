@@ -709,6 +709,13 @@
         .toolbox::-webkit-scrollbar {
           display: none !important; /* Hide scrollbar Chrome/Safari */
         }
+        .toolbox::after {
+          content: "" !important;
+          flex: 0 0 20px !important;
+          width: 20px !important;
+          height: 1px !important;
+          display: block !important;
+        }
 
         /* Solutions compact rounded square cards */
         .component-item {
@@ -1175,7 +1182,7 @@
       🍋
     </div>
 
-    <script src="cabbage01.js?v=12"></script>
+    <script src="cabbage01.js?v=13"></script>
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
