@@ -479,6 +479,37 @@ function setupEventHandlers() {
     challengeManager.start(5);
   });
 
+  // 行動端頂部導覽列按鈕事件安全綁定
+  const mobInstBtn = document.getElementById("mobile-instructions-btn");
+  if (mobInstBtn) {
+    mobInstBtn.addEventListener("click", () => {
+      openAnimModal(document.getElementById("instructions-screen"));
+    });
+  }
+
+  const mobClearBtn = document.getElementById("mobile-clear-btn");
+  if (mobClearBtn) {
+    mobClearBtn.addEventListener("click", () => {
+      showConfirmModal("清除桌面", "您確定要清空所有的試管並重置實驗桌面嗎？", () => {
+        resetWorkbench();
+        updateStatusText("實驗桌面已清空。");
+      });
+    });
+  }
+
+  const mobHomeBtn = document.getElementById("mobile-home-btn");
+  if (mobHomeBtn) {
+    mobHomeBtn.addEventListener("click", () => {
+      initAudio();
+      showConfirmModal("回到起始畫面", "您確定要結束當前的實驗，回到遊戲首頁嗎？", () => {
+        document.body.classList.remove("in-challenge");
+        document.getElementById("challenge-hud").classList.add("hidden");
+        resetWorkbench();
+        openAnimModal(document.getElementById("start-screen"));
+      });
+    });
+  }
+
   // 拖曳元素綁定
   // 待測溶液拖曳
   const solutionItems = document.querySelectorAll(".toolbox .component-item");
@@ -719,28 +750,111 @@ function setupTouchControls() {
   probeBtn.addEventListener("touchmove", moveDragTouch, { passive: false });
   probeBtn.addEventListener("touchend", endDragTouch, { passive: false });
 
-  // 待測溶液櫃觸控直接雙擊或單擊生成 (行動端簡化操作)
+  // 待測溶液櫃觸控支持：雙模觸控系統 (雙擊/點擊直加 + 觸控手勢拖曳)
   const solutionItems = document.querySelectorAll(".toolbox .component-item");
+  const draggedSol = document.getElementById("dragged-solution");
+  
   solutionItems.forEach(item => {
-    item.addEventListener("touchstart", (e) => {
-      // 記錄觸控開始，以便檢測單擊/快速點擊
-      item.dataset.lastTouch = Date.now();
-    });
+    let touchStartPos = { x: 0, y: 0 };
+    let touchStartTime = 0;
+    let isDragging = false;
+    let type = "";
+    let icon = "";
 
-    item.addEventListener("touchend", (e) => {
-      const now = Date.now();
-      const last = parseFloat(item.dataset.lastTouch || 0);
-      if (now - last < 250) { // 快速點擊
-        const type = item.getAttribute("data-type");
-        const freeIdx = rackSlots.indexOf(null);
-        if (freeIdx !== -1) {
-          addTubeToSlot(freeIdx, type);
-          playDropperSound(false);
-        } else {
-          showCustomAlert("試管架滿了！", "請先清空一些插槽才能放置新試管。");
+    item.addEventListener("touchstart", (e) => {
+      // 記錄起始狀態
+      const touch = e.touches[0];
+      touchStartPos = { x: touch.clientX, y: touch.clientY };
+      touchStartTime = Date.now();
+      isDragging = false;
+      type = item.getAttribute("data-type");
+      
+      const iconEl = item.querySelector(".icon");
+      icon = iconEl ? iconEl.textContent : "🧪";
+      
+      initAudio(); // 啟動音訊
+    }, { passive: true });
+
+    item.addEventListener("touchmove", (e) => {
+      const touch = e.touches[0];
+      const dx = touch.clientX - touchStartPos.x;
+      const dy = touch.clientY - touchStartPos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      // 如果移動距離大於 12px，且為垂直主導的滑動（代表想要往上拖進試管架），才啟動拖曳
+      if (dist > 12 && !isDragging) {
+        const isVertical = Math.abs(dy) > Math.abs(dx) * 1.15;
+        if (isVertical) {
+          isDragging = true;
+          draggingType = "solution";
+          draggedData = type;
+          if (draggedSol) {
+            draggedSol.textContent = icon;
+            draggedSol.style.display = "block";
+          }
         }
       }
-    });
+
+      if (isDragging) {
+        // 防止拖曳時瀏覽器背景捲動
+        if (e.cancelable) e.preventDefault();
+        
+        if (draggedSol) {
+          draggedSol.style.left = touch.clientX + "px";
+          draggedSol.style.top = touch.clientY + "px";
+        }
+
+        // 偵測滑過的插槽
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        const slotElement = element ? element.closest(".tube-slot") : null;
+
+        document.querySelectorAll(".tube-slot").forEach(s => s.classList.remove("hovered"));
+        if (slotElement) {
+          slotElement.classList.add("hovered");
+        }
+      }
+    }, { passive: false });
+
+    item.addEventListener("touchend", (e) => {
+      const touch = e.changedTouches[0];
+      
+      if (isDragging) {
+        if (draggedSol) {
+          draggedSol.style.display = "none";
+        }
+        
+        const element = document.elementFromPoint(touch.clientX, touch.clientY);
+        const slotElement = element ? element.closest(".tube-slot") : null;
+
+        if (slotElement) {
+          slotElement.classList.remove("hovered");
+          const idx = parseInt(slotElement.getAttribute("data-slot"));
+          addTubeToSlot(idx, type);
+          playDropperSound(false);
+        }
+
+        document.querySelectorAll(".tube-slot").forEach(s => s.classList.remove("hovered"));
+        isDragging = false;
+        draggingType = null;
+        draggedData = null;
+      } else {
+        // 快速單擊 (且移動距離必須小於 10px，防止橫向捲動抽屜放開時誤判為點擊添加)
+        const dx = touch.clientX - touchStartPos.x;
+        const dy = touch.clientY - touchStartPos.y;
+        const currentDist = Math.sqrt(dx * dx + dy * dy);
+        
+        const duration = Date.now() - touchStartTime;
+        if (duration < 250 && currentDist < 10) {
+          const freeIdx = rackSlots.indexOf(null);
+          if (freeIdx !== -1) {
+            addTubeToSlot(freeIdx, type);
+            playDropperSound(false);
+          } else {
+            showCustomAlert("試管架滿了！", "請先清空一些插槽才能放置新試管。");
+          }
+        }
+      }
+    }, { passive: true });
   });
 }
 

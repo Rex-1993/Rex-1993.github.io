@@ -555,6 +555,280 @@
           font-size: 0.8rem;
         }
       }
+
+      /* Premium Mobile Portrait Styles (max-width: 600px) */
+      .mobile-top-bar {
+        display: none;
+      }
+      @media (max-width: 600px) {
+        /* Hide default header */
+        header {
+          display: none !important;
+        }
+        
+        /* Show sleek mobile top bar */
+        .mobile-top-bar {
+          display: flex !important;
+          justify-content: space-between;
+          align-items: center;
+          width: 100%;
+          background: rgba(255, 255, 255, 0.75);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.4);
+          border-radius: 12px;
+          padding: 6px 12px;
+          margin-bottom: 8px;
+          flex-shrink: 0;
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+          box-sizing: border-box;
+        }
+        .mobile-title {
+          font-weight: bold;
+          font-size: 1.1rem;
+          color: #2c3e50;
+        }
+        .mobile-top-controls {
+          display: flex;
+          gap: 6px;
+        }
+        .mobile-ctrl-btn {
+          border: none;
+          background: #e9ecef;
+          color: #2c3e50;
+          padding: 6px 12px;
+          font-size: 0.82rem;
+          font-weight: bold;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .mobile-ctrl-btn.danger {
+          background: linear-gradient(135deg, #ff6b6b 0%, #ff4757 100%);
+          color: white;
+        }
+        .mobile-ctrl-btn.secondary {
+          background: linear-gradient(135deg, #bdc3c7 0%, #95a5a6 100%);
+          color: white;
+        }
+        .mobile-ctrl-btn:active {
+          transform: scale(0.95);
+        }
+
+        /* Adjust main stack direction to column-reverse (Lab on top, reagents on bottom) */
+        main {
+          flex-direction: column-reverse !important;
+          gap: 8px !important;
+          overflow: hidden;
+        }
+
+        /* Re-style sidebar as a slim bottom drawer */
+        .sidebar {
+          width: 100% !important;
+          height: 110px !important;
+          max-height: 110px !important;
+          padding: 8px 10px !important;
+          margin: 0 !important;
+          flex-direction: row !important;
+          align-items: center !important;
+          gap: 12px !important;
+          background: #f8f9fa !important;
+          border: 2px solid #e9ecef !important;
+          border-radius: var(--border-radius) !important;
+          overflow: hidden !important;
+          flex-shrink: 0 !important;
+        }
+        
+        /* Hide vertical headers and normal buttons in sidebar */
+        .sidebar h2, .sidebar-controls {
+          display: none !important;
+        }
+
+        /* Re-style cabbage beaker to be a compact square card on the left */
+        .reagent-beaker {
+          width: 75px !important;
+          height: 94px !important;
+          padding: 4px !important;
+          margin: 0 !important;
+          gap: 2px !important;
+          border-radius: 12px !important;
+          justify-content: center !important;
+          flex-shrink: 0 !important;
+          background: white !important;
+          border: 2px solid #dee2e6 !important;
+        }
+        .reagent-beaker .beaker-svg-container {
+          width: 44px !important;
+          height: 44px !important;
+        }
+        .reagent-beaker .dropper-tool-btn {
+          width: 100% !important;
+          padding: 2px 4px !important;
+          font-size: 0.68rem !important;
+          text-align: center !important;
+          border-radius: 4px !important;
+          white-space: nowrap !important;
+        }
+
+        /* Convert toolbox to a horizontal scrollbar area */
+        .toolbox {
+          display: flex !important;
+          flex-direction: row !important;
+          grid-template-columns: none !important;
+          overflow-x: auto !important;
+          white-space: nowrap !important;
+          -webkit-overflow-scrolling: touch !important;
+          gap: 8px !important;
+          width: 100% !important;
+          height: 94px !important;
+          margin: 0 !important;
+          padding: 4px 2px !important;
+          flex-shrink: 0 !important;
+          scrollbar-width: none !important; /* Hide scrollbar for clean UI */
+        }
+        .toolbox::-webkit-scrollbar {
+          display: none !important; /* Hide scrollbar Chrome/Safari */
+        }
+
+        /* Solutions compact rounded square cards */
+        .component-item {
+          flex: 0 0 62px !important;
+          width: 62px !important;
+          height: 78px !important;
+          padding: 6px 4px !important;
+          border-radius: 12px !important;
+          gap: 2px !important;
+          background: white !important;
+          border: 2px solid #dee2e6 !important;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.03) !important;
+          aspect-ratio: auto !important;
+        }
+        .component-item .icon {
+          font-size: 1.6rem !important;
+        }
+        .component-item span {
+          display: block !important;
+          font-size: 0.68rem !important;
+          white-space: nowrap !important;
+          font-weight: bold !important;
+          color: #2c3e50 !important;
+        }
+
+        /* Workspace container stretches to fill remaining height */
+        .workspace-container {
+          flex: 1 !important;
+          height: auto !important;
+          margin: 0 !important;
+        }
+
+        /* Test tube rack size scaling for mobile portrait */
+        .rack-workbench {
+          padding: 8px 5px !important;
+          min-height: 180px !important;
+        }
+        .rack-svg-container {
+          height: 145px !important;
+          border-bottom-width: 8px !important;
+          padding: 0 10px 4px 10px !important;
+        }
+        .tube-slot {
+          width: 42px !important;
+          height: 120px !important;
+          border-radius: 0 0 20px 20px !important;
+        }
+        .test-tube {
+          width: 32px !important;
+          height: 110px !important;
+          border-radius: 0 0 16px 16px !important;
+        }
+        .tube-label {
+          top: 10px !important;
+          font-size: 0.6rem !important;
+          padding: 1px 3px !important;
+        }
+
+        /* Compact info panel and spectrum footer */
+        .lab-info-panel {
+          padding: 4px 8px !important;
+          font-size: 0.72rem !important;
+          margin-top: 4px !important;
+        }
+        .info-badge {
+          padding: 1px 6px !important;
+          font-size: 0.7rem !important;
+        }
+        .spectrum-workbench-footer {
+          padding: 6px 10px !important;
+          margin-top: 6px !important;
+        }
+        .spectrum-title {
+          font-size: 0.75rem !important;
+          margin-bottom: 4px !important;
+        }
+        .spectrum-bar {
+          height: 14px !important;
+        }
+        .spectrum-marker {
+          top: -3px !important;
+          height: 20px !important;
+          width: 12px !important;
+        }
+        .marker-arrow {
+          border-left-width: 5px !important;
+          border-right-width: 5px !important;
+          border-top-width: 6px !important;
+        }
+        .marker-line {
+          width: 2px !important;
+          height: 14px !important;
+        }
+        .spectrum-labels {
+          font-size: 0.65rem !important;
+          margin-top: 2px !important;
+        }
+
+        /* Adjust start screen panel scale to prevent overflow */
+        .start-panel {
+          padding: 1.5rem !important;
+          width: 95% !important;
+        }
+        .start-panel h1 {
+          font-size: 1.8rem !important;
+        }
+        .start-panel p {
+          font-size: 0.95rem !important;
+        }
+        .mode-selection {
+          gap: 10px !important;
+          margin-top: 1rem !important;
+        }
+        .btn-primary-large, .btn-secondary-large, .btn-info-large, .btn-home-large {
+          padding: 10px 15px !important;
+          font-size: 1.05rem !important;
+          min-width: 130px !important;
+          flex: 1 1 auto !important;
+        }
+        
+        /* Compact Instructions Panel */
+        .instructions-panel {
+          padding: 1rem !important;
+          width: 95% !important;
+          max-height: 90vh !important;
+        }
+        .instructions-panel h2 {
+          font-size: 1.3rem !important;
+          margin-bottom: 8px !important;
+        }
+        .instructions-content h3 {
+          font-size: 0.95rem !important;
+          margin-top: 10px !important;
+        }
+        .instructions-content li, .instructions-content p {
+          font-size: 0.8rem !important;
+          line-height: 1.4 !important;
+        }
+      }
     </style>
   </head>
   <body>
@@ -659,6 +933,16 @@
             <button id="btn-results-to-normal" class="btn success">自由實驗室 🧪</button>
             <button id="btn-results-home" class="btn home">回到首頁</button>
           </div>
+        </div>
+      </div>
+
+      <!-- Sleek Top Action Bar for Mobile Portrait (Hidden on Desktop) -->
+      <div class="mobile-top-bar">
+        <div class="mobile-title">🧪 酸鹼科學家</div>
+        <div class="mobile-top-controls">
+          <button id="mobile-instructions-btn" class="mobile-ctrl-btn">說明</button>
+          <button id="mobile-clear-btn" class="mobile-ctrl-btn danger">清除</button>
+          <button id="mobile-home-btn" class="mobile-ctrl-btn secondary">首頁</button>
         </div>
       </div>
 
@@ -867,7 +1151,12 @@
       </svg>
     </div>
 
-    <script src="cabbage01.js?v=7"></script>
+    <!-- Dragged solution visual indicator container (Touch drag support) -->
+    <div id="dragged-solution" style="position:fixed; pointer-events:none; z-index:9999; display:none; transform:translate(-50%, -50%); font-size:3rem; filter:drop-shadow(0 5px 8px rgba(0,0,0,0.25)); line-height:1;">
+      🍋
+    </div>
+
+    <script src="cabbage01.js?v=9"></script>
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
