@@ -1,4 +1,4 @@
-const CACHE_NAME = "natural-science-pwa-v14";
+const CACHE_NAME = "natural-science-pwa-v15";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -10,7 +10,7 @@ const ASSETS_TO_CACHE = [
   "./electric01.js",
   "./magnet01.js",
   "./optics01.js",
-  "./cabbage01.js?v=14",
+  "./cabbage01.js?v=15",
   "./icon-192.png",
   "./icon-512.png",
 ];

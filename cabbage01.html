@@ -699,11 +699,11 @@
           white-space: nowrap !important;
           -webkit-overflow-scrolling: touch !important;
           gap: 8px !important;
-          width: 100% !important;
+          flex: 1 !important;
+          min-width: 0 !important;
           height: 94px !important;
           margin: 0 !important;
           padding: 4px 2px !important;
-          flex-shrink: 0 !important;
           scrollbar-width: none !important; /* Hide scrollbar for clean UI */
         }
         .toolbox::-webkit-scrollbar {
@@ -711,8 +711,8 @@
         }
         .toolbox::after {
           content: "" !important;
-          flex: 0 0 20px !important;
-          width: 20px !important;
+          flex: 0 0 40px !important;
+          width: 40px !important;
           height: 1px !important;
           display: block !important;
         }
@@ -1187,7 +1187,7 @@
       🍋
     </div>
 
-    <script src="cabbage01.js?v=14"></script>
+    <script src="cabbage01.js?v=15"></script>
     <script>
       if ("serviceWorker" in navigator) {
         navigator.serviceWorker
